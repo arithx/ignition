@@ -10,5 +10,6 @@
             "filesystem": "test",
             "path": "/ignition/test",
             "contents": {"source": "data:,asdf"}
-        }]}
+        }]
+    }
 }
