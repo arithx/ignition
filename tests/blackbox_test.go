@@ -98,10 +98,17 @@ func runIgnition(t *testing.T, stage string) {
 	out, err := exec.Command(
 		"../bin/amd64/ignition", "-clear-cache", "-oem",
 		"file", "-stage", stage).CombinedOutput()
-	journalctlOut, jerr := exec.Command(
-		"/bin/journalctl", "--identifier=ignition",
-		"--all", "--priority=7").CombinedOutput()
-	t.Log(jerr, string(journalctlOut))
+	debugInfo, derr := ioutil.ReadFile("/var/log/syslog")
+	if derr == nil {
+		debugOut := []string{}
+		lines := strings.Split(string(debugInfo), "\n")
+		for _, line := range lines {
+			if strings.Contains(line, "ignition") {
+				debugOut = append(debugOut, line)
+			}
+		}
+		t.Log(derr, debugOut)
+	}
 	if err != nil {
 		t.Fatal("ignition", err, string(out))
 	}
