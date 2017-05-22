@@ -99,7 +99,7 @@ func runIgnition(t *testing.T, stage string) {
 		"../bin/amd64/ignition", "-clear-cache", "-oem",
 		"file", "-stage", stage).CombinedOutput()
 	journalctlOut, jerr := exec.Command(
-		"journalctl", "--identifier=ignition",
+		"/bin/journalctl", "--identifier=ignition",
 		"--all", "--priority=7").CombinedOutput()
 	t.Log(jerr, string(journalctlOut))
 	if err != nil {
