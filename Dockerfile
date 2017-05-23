@@ -14,5 +14,6 @@ rm -f /lib/systemd/system/sockets.target.wants/*initctl*; \
 rm -f /lib/systemd/system/basic.target.wants/*;\
 rm -f /lib/systemd/system/anaconda.target.wants/*;
 VOLUME [ "/sys/fs/cgroup" ]
-RUN sudo /docker_test.sh
+RUN yum install sudo
+RUN sudo -E /docker_test.sh
 CMD ["/usr/sbin/init"]
