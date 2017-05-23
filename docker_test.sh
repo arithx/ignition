@@ -2,12 +2,12 @@ source /env_vars.sh
 
 sudo yum update
 
-curl -sL -o ~/bin/gimme https://raw.githubusercontent.com/travis-ci/gimme/master/gimme
-chmod +x ~/bin/gimme
+sudo curl -sL -o /bin/gimme https://raw.githubusercontent.com/travis-ci/gimme/master/gimme
+sudo chmod +x /bin/gimme
 
 echo $GIMME_GO_VERSION
 #eval "$(gimme $GIMME_GO_VERSION)"
-eval "$(gimme 1.7)"
+sudo eval "$(gimme 1.7)"
 
 sudo yum install git gcc-aarch64-linux-gnu libc6-dev-arm64-cross libblkid-devel kpartx gdisk -y
 
