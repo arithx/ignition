@@ -34,5 +34,5 @@ install:
 
 script:
    - sudo docker run --detach --privileged --volume=/sys/fs/cgroup:/sys/fs/cgroup:ro travispoc /usr/lib/systemd/systemd > /tmp/container_id
-   - sudo docker exec "$(cat /tmp/container_id)" sudo -E /docker_test.sh
+   - sudo docker exec "$(cat /tmp/container_id)" sudo -E /bin/bash -c "/docker_test.sh"
    - sudo docker stop "$(cat /tmp/container_id)"
