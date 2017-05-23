@@ -15,5 +15,6 @@ rm -f /lib/systemd/system/basic.target.wants/*;\
 rm -f /lib/systemd/system/anaconda.target.wants/*;
 VOLUME [ "/sys/fs/cgroup" ]
 RUN yum install sudo -y
+RUN sudo chmod +x /docker_test.sh
 RUN sudo -E /docker_test.sh
 CMD ["/usr/sbin/init"]
