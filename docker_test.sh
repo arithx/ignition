@@ -12,20 +12,9 @@ eval "$(gimme 1.7)"
 sudo yum install git gcc-aarch64-linux-gnu libc6-dev-arm64-cross libblkid-devel kpartx gdisk -y
 sudo yum group install "Development Tools" -y
 
-export GOPATH="$(pwd)/go"
+export GOPATH="/go"
 
-mkdir go
-mkdir go/src
-mkdir go/src/github.com
-mkdir go/src/github.com/coreos
-
-cd go/src/github.com/coreos
-
-cp -r /ignition .
-ls ignition
-#git clone https://github.com/coreos/ignition
-
-cd ignition
+cd /go/github.com/coreos/ignition
 
 # since libblkid-dev:arm64 cannot be installed, spoof it
 if [ "${TARGET}" == "arm64" ]; then

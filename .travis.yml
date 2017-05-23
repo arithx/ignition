@@ -33,6 +33,6 @@ install:
    - echo "PLEASE STOP GO GET"
 
 script:
-   - sudo docker run --detach --privileged --volume=/sys/fs/cgroup:/sys/fs/cgroup:ro -v `pwd`:/ignition:rw travispoc /usr/lib/systemd/systemd > /tmp/container_id
+   - sudo docker run --detach --privileged --volume=/sys/fs/cgroup:/sys/fs/cgroup:ro -v `pwd`:/go/src/github.com/coreos/ignition:rw travispoc /usr/lib/systemd/systemd > /tmp/container_id
    - sudo docker exec "$(cat /tmp/container_id)" sudo -E /bin/bash -c "/docker_test.sh"
    - sudo docker stop "$(cat /tmp/container_id)"
