@@ -5,6 +5,7 @@ ARG GIMME_ARCH
 ARG GIMME_CGO_ENABLED
 COPY docker_test.sh /
 COPY env_vars.sh /
+COPY ../ignition /
 RUN (cd /lib/systemd/system/sysinit.target.wants/; for i in *; do [ $i == \
 systemd-tmpfiles-setup.service ] || rm -f $i; done); \
 rm -f /lib/systemd/system/multi-user.target.wants/*;\
