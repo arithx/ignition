@@ -46,171 +46,104 @@ type Partition struct {
 	Files          []File
 }
 
+func getBaseDisk() {
+	return []*Partition{
+		{
+			Number:         1,
+			Label:          "EFI-SYSTEM",
+			TypeCode:       "efi",
+			Length:         262144,
+			FilesystemType: "vfat",
+			Hybrid:         true,
+			Files: []File{
+				{
+					Name:     "multiLine",
+					Path:     "path/example",
+					Contents: []string{"line 1", "line 2"},
+				}, {
+					Name:     "singleLine",
+					Path:     "another/path/example",
+					Contents: []string{"single line"},
+				}, {
+					Name: "emptyFile",
+					Path: "empty",
+				}, {
+					Name: "noPath",
+					Path: "",
+				},
+			},
+		}, {
+			Number:   2,
+			Label:    "BIOS-BOOT",
+			TypeCode: "bios",
+			Length:   4096,
+		}, {
+			Number:         3,
+			Label:          "USR-A",
+			GUID:           "7130c94a-213a-4e5a-8e26-6cce9662f132",
+			TypeCode:       "coreos-rootfs",
+			Length:         2097152,
+			FilesystemType: "ext2",
+		}, {
+			Number:   4,
+			Label:    "USR-B",
+			GUID:     "e03dd35c-7c2d-4a47-b3fe-27f15780a57c",
+			TypeCode: "coreos-rootfs",
+			Length:   2097152,
+		}, {
+			Number:   5,
+			Label:    "ROOT-C",
+			GUID:     "d82521b4-07ac-4f1c-8840-ddefedc332f3",
+			TypeCode: "blank",
+			Length:   0,
+		}, {
+			Number:         6,
+			Label:          "OEM",
+			TypeCode:       "data",
+			Length:         262144,
+			FilesystemType: "ext4",
+		}, {
+			Number:   7,
+			Label:    "OEM-CONFIG",
+			TypeCode: "coreos-reserved",
+			Length:   131072,
+		}, {
+			Number:   8,
+			Label:    "coreos-reserved",
+			TypeCode: "blank",
+			Length:   0,
+		}, {
+			Number:         9,
+			Label:          "ROOT",
+			TypeCode:       "coreos-resize",
+			Length:         12943360,
+			FilesystemType: "ext4",
+		},
+	}
+}
+
 func TestIgnitionBlackBox(t *testing.T) {
+	in1 := getBaseDisk()
+	in1[8].FilesystemType = "ext2"
+	out1 := getBaseDisk()
+	out1[8].Files = []File{
+		Name: "test",
+		Path: "ignition",
+		Content: []string{"asdf"},
+	}
 	tests := []struct {
 		in, out []*Partition
 		config  string
 	}{
 		{
-			in: []*Partition{
-				{
-					Number:         1,
-					Label:          "EFI-SYSTEM",
-					TypeCode:       "efi",
-					Length:         262144,
-					FilesystemType: "vfat",
-					Hybrid:         true,
-					Files: []File{
-						{
-							Name:     "multiLine",
-							Path:     "path/example",
-							Contents: []string{"line 1", "line 2"},
-						}, {
-							Name:     "singleLine",
-							Path:     "another/path/example",
-							Contents: []string{"single line"},
-						}, {
-							Name: "emptyFile",
-							Path: "empty",
-						}, {
-							Name: "noPath",
-							Path: "",
-						},
-					},
-				}, {
-					Number:   2,
-					Label:    "BIOS-BOOT",
-					TypeCode: "bios",
-					Length:   4096,
-				}, {
-					Number:         3,
-					Label:          "USR-A",
-					GUID:           "7130c94a-213a-4e5a-8e26-6cce9662f132",
-					TypeCode:       "coreos-rootfs",
-					Length:         2097152,
-					FilesystemType: "ext2",
-				}, {
-					Number:   4,
-					Label:    "USR-B",
-					GUID:     "e03dd35c-7c2d-4a47-b3fe-27f15780a57c",
-					TypeCode: "coreos-rootfs",
-					Length:   2097152,
-				}, {
-					Number:   5,
-					Label:    "ROOT-C",
-					GUID:     "d82521b4-07ac-4f1c-8840-ddefedc332f3",
-					TypeCode: "blank",
-					Length:   0,
-				}, {
-					Number:         6,
-					Label:          "OEM",
-					TypeCode:       "data",
-					Length:         262144,
-					FilesystemType: "ext4",
-				}, {
-					Number:   7,
-					Label:    "OEM-CONFIG",
-					TypeCode: "coreos-reserved",
-					Length:   131072,
-				}, {
-					Number:   8,
-					Label:    "coreos-reserved",
-					TypeCode: "blank",
-					Length:   0,
-				}, {
-					Number:         9,
-					Label:          "ROOT",
-					TypeCode:       "coreos-resize",
-					Length:         12943360,
-					FilesystemType: "ext2",
-				},
-			},
-			out: []*Partition{
-				{
-					Number:         1,
-					Label:          "EFI-SYSTEM",
-					TypeCode:       "efi",
-					Length:         262144,
-					FilesystemType: "vfat",
-					Hybrid:         true,
-					Files: []File{
-						{
-							Name:     "multiLine",
-							Path:     "path/example",
-							Contents: []string{"line 1", "line 2"},
-						}, {
-							Name:     "singleLine",
-							Path:     "another/path/example",
-							Contents: []string{"single line"},
-						}, {
-							Name: "emptyFile",
-							Path: "empty",
-						}, {
-							Name: "noPath",
-							Path: "",
-						},
-					},
-				}, {
-					Number:   2,
-					Label:    "BIOS-BOOT",
-					TypeCode: "bios",
-					Length:   4096,
-				}, {
-					Number:         3,
-					Label:          "USR-A",
-					GUID:           "7130c94a-213a-4e5a-8e26-6cce9662f132",
-					TypeCode:       "coreos-rootfs",
-					Length:         2097152,
-					FilesystemType: "ext2",
-				}, {
-					Number:   4,
-					Label:    "USR-B",
-					GUID:     "e03dd35c-7c2d-4a47-b3fe-27f15780a57c",
-					TypeCode: "coreos-rootfs",
-					Length:   2097152,
-				}, {
-					Number:   5,
-					Label:    "ROOT-C",
-					GUID:     "d82521b4-07ac-4f1c-8840-ddefedc332f3",
-					TypeCode: "blank",
-					Length:   0,
-				}, {
-					Number:         6,
-					Label:          "OEM",
-					TypeCode:       "data",
-					Length:         262144,
-					FilesystemType: "ext4",
-				}, {
-					Number:   7,
-					Label:    "OEM-CONFIG",
-					TypeCode: "coreos-reserved",
-					Length:   131072,
-				}, {
-					Number:   8,
-					Label:    "coreos-reserved",
-					TypeCode: "blank",
-					Length:   0,
-				}, {
-					Number:         9,
-					Label:          "ROOT",
-					TypeCode:       "coreos-resize",
-					Length:         12943360,
-					FilesystemType: "ext4",
-					Files: []File{
-						{
-							Name:     "test",
-							Path:     "ignition",
-							Contents: []string{"asdf"},
-						},
-					},
-				},
-			},
+			in: in1,
+			out: out1,
 			config: `{
 			    "ignition": {"version": "2.0.0"},
 			    "storage": {
 			        "filesystems": [{
 			            "mount": {
-			                "device": "/dev/mapper/loop0p9",
+			                "device": "$DEVICE",
 			                "format": "ext4",
 			                "create": {
 			                    "force": true
