@@ -23,7 +23,9 @@ services:
 
 before_install:
    - sudo docker pull centos:7
-   - echo "export TARGET=${TARGET}\nexport GIMME_ARCH=${GIMME_ARCH}\nexport GIMME_CGO_ENABLED=${GIMME_CGO_ENABLED}" > env_vars.sh
+   - echo "export TARGET=${TARGET}" >> env_vars.sh
+   - echo "export GIMME_ARCH=${GIMME_ARCH}" >> env_vars.sh
+   - echo "export GIMME_CGO_ENABLED=${GIMME_CGO_ENABLED}" >> env_vars.sh
    - sudo docker build --rm=true --tag=travispoc .
 
 install:
