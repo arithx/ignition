@@ -1,7 +1,13 @@
 source /env_vars.sh
 
 sudo yum update
-sudo yum install git golang gcc-aarch64-linux-gnu libc6-dev-arm64-cross libblkid-devel kpartx gdisk -y
+
+curl -sL -o ~/bin/gimme https://raw.githubusercontent.com/travis-ci/gimme/master/gimme
+chmod +x ~/bin/gimme
+
+eval "$(gimme)"
+
+sudo yum install git gcc-aarch64-linux-gnu libc6-dev-arm64-cross libblkid-devel kpartx gdisk -y
 
 export GOPATH="$(pwd)/go"
 

@@ -26,6 +26,7 @@ before_install:
    - echo "export TARGET=${TARGET}" >> env_vars.sh
    - echo "export GIMME_ARCH=${GIMME_ARCH}" >> env_vars.sh
    - echo "export GIMME_CGO_ENABLED=${GIMME_CGO_ENABLED}" >> env_vars.sh
+   - echo "export GIMME_GO_VERSION=${GIMME_GO_VERSION}" >> env_vars.sh
    - sudo docker build --rm=true --tag=travispoc .
 
 install:
