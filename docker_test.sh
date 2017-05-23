@@ -21,9 +21,7 @@ mkdir go/src/github.com/coreos
 
 cd go/src/github.com/coreos
 
-ls /
-ls /ignition
-mv /ignition -t .
+cp -r /ignition .
 #git clone https://github.com/coreos/ignition
 
 cd ignition
