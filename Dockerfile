@@ -1,8 +1,8 @@
 FROM centos:7
 ENV container docker
-ENV TARGET=${TARGET}
-ENV GIMME_ARCH=${GIMME_ARCH}
-ENV GIMME_CGO_ENABLED=${GIMME_CGO_ENABLED}
+ENV TARGET=$TARGET
+ENV GIMME_ARCH=$GIMME_ARCH
+ENV GIMME_CGO_ENABLED=$GIMME_CGO_ENABLED
 COPY docker_test.sh /
 RUN (cd /lib/systemd/system/sysinit.target.wants/; for i in *; do [ $i == \
 systemd-tmpfiles-setup.service ] || rm -f $i; done); \

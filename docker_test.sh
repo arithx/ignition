@@ -25,7 +25,7 @@ if [ "${TARGET}" == "arm64" ]; then
       aarch64-linux-gnu-gcc-ar-4.8 cq libblkid.a stub.o;
 fi
 
-echo ${TARGET}
+echo $TARGET
 
 if [ "${TARGET}" == "amd64" ]; then
       GOARCH="${TARGET}" sudo -E env "PATH=$PATH" ./test;
