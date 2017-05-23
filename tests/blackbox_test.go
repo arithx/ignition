@@ -75,6 +75,7 @@ func outer(t *testing.T, inPath string, outPath string, config string) {
 	setDevices(t, imgName, in)
 	mountPartitions(t, in)
 	createFiles(t, in)
+	dumpDiskInfo(t, imgName, in)
 	unmountPartitions(t, in, imgName)
 
 	// Ignition
@@ -92,6 +93,27 @@ func outer(t *testing.T, inPath string, outPath string, config string) {
 	dumpDiskInfo(t, imgName, out)
 	validatePartitions(t, out, imgName)
 	validateFiles(t, out)
+
+	// Cleanup
+	unmountPartitions(t, out, imgName)
+	removeMountFolders(t, out)
+	removeImageFile(t, imgName)
+}
+
+func removeImageFile(t *testing.T, imgName string) {
+	err := os.Remove(imgName)
+	if err != nil {
+		t.Log(err)
+	}
+}
+
+func removeMountFolders(t *testing.T, partitions []*Partition) {
+	for _, p := range partitions {
+		err := os.RemoveAll(p.MountPath)
+		if err != nil {
+			t.Log(err)
+		}
+	}
 }
 
 func runIgnition(t *testing.T, stage string) {

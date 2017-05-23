@@ -25,6 +25,12 @@ addons:
     - kpartx
     - gdisk
 
+before_install:
+    - sudo add-apt-repository ppa:pitti/systemd
+    - sudo apt-get update
+    - sudo apt-get dist-upgrade
+    - sudo sed -i "s/console=tty1 console=ttyS0/init=\/lib\/systemd\/systemd/g" /etc/default/grub
+    - sudo update-grub
 install:
   # since libblkid-dev:arm64 cannot be installed, spoof it
   -     if [ "${TARGET}" == "arm64" ]; then
