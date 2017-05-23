@@ -10,9 +10,9 @@ echo $GIMME_GO_VERSION
 eval "$(gimme 1.7)"
 
 sudo yum install git gcc-aarch64-linux-gnu libc6-dev-arm64-cross libblkid-devel kpartx gdisk -y
+sudo yum group install "Development Tools" -y
 
 export GOPATH="$(pwd)/go"
-PATH=$PATH:/bin/gcc
 
 mkdir go
 mkdir go/src
@@ -39,7 +39,7 @@ fi
 echo $TARGET
 
 if [ "${TARGET}" == "amd64" ]; then
-      GOARCH="${TARGET}" sudo -E env "PATH=$PATH" ./test;
+      GOARCH="${TARGET}" sudo -E env "PATH=$PATH:/bin/gcc" ./test;
 elif [ "${TARGET}" == "arm64" ]; then
       export CGO_LDFLAGS="-L ${PWD}";
       GOARCH="${TARGET}" ./build;
