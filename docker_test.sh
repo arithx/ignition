@@ -1,5 +1,14 @@
 sudo yum update
-sudo yum install golang gcc-aarch64-linux-gnu libc6-dev-arm64-cross libblkid-dev kpartx gdisk -y
+sudo yum install git golang gcc-aarch64-linux-gnu libc6-dev-arm64-cross libblkid-dev kpartx gdisk -y
+
+export GOPATH="$(pwd)/go"
+
+mkdir go
+mkdir go/src
+mkdir go/src/github.com
+mkdir go/src/github.com/coreos
+
+cd go/src/github.com/coreos
 
 git clone https://github.com/coreos/ignition
 
