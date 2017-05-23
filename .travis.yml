@@ -15,42 +15,14 @@ env:
    - TARGET=amd64
    - TARGET=arm64 GIMME_ARCH=arm64 GIMME_CGO_ENABLED=1
 
-addons:
-  apt:
-    packages:
-    # install cross compilers for cgo support.
-    - gcc-aarch64-linux-gnu
-    - libc6-dev-arm64-cross
-    - libblkid-dev
-    - kpartx
-    - gdisk
+services:
+   - docker
 
 before_install:
-    - sudo add-apt-repository ppa:pitti/systemd -y
-    - sudo apt-get update
-    - sudo apt-get install systemd libpam-systemd
-    - sudo ln -fs /proc/self/mounts /etc/mtab
-    - sudo sed -i "s/console=tty1 console=ttyS0/init=\/lib\/systemd\/systemd/g" /etc/default/grub
-    - sudo update-grub
-
-install:
-  # since libblkid-dev:arm64 cannot be installed, spoof it
-  -     if [ "${TARGET}" == "arm64" ]; then
-                echo "void blkid_new_probe_from_filename(void) {}" >> stub.c;
-                echo "void blkid_do_probe(void) {}"                >> stub.c;
-                echo "void blkid_probe_has_value(void) {}"         >> stub.c;
-                echo "void blkid_probe_lookup_value(void) {}"      >> stub.c;
-                echo "void blkid_free_probe(void) {}"              >> stub.c;
-                aarch64-linux-gnu-gcc-4.8 -c -o stub.o stub.c;
-                aarch64-linux-gnu-gcc-ar-4.8 cq libblkid.a stub.o;
-        fi
+   - sudo docker pull centos:7
+   - sudo docker build --rm=true --tag=travispoc .
 
 script:
-  -     if [ "${TARGET}" == "amd64" ]; then
-                GOARCH="${TARGET}" sudo -E env "PATH=$PATH" ./test;
-        elif [ "${TARGET}" == "arm64" ]; then
-                export CGO_LDFLAGS="-L ${PWD}";
-                GOARCH="${TARGET}" ./build;
-                file "bin/${TARGET}/ignition" | egrep 'aarch64';
-        fi
-  - sudo cat /var/log/syslog | grep ignition
+   - sudo docker run --detach --privileged --volume=/sys/fs/cgroup:/sys/fs/cgroup:ro travispoc /usr/lib/systemd/systemd > /tmp/container_id
+   - sudo docker exec "$(cat /tmp/container_id)" docker_test.sh
+   - sudo docker stop "$(cat /tmp/container_id)"
