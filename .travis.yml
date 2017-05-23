@@ -23,7 +23,7 @@ services:
 
 before_install:
    - sudo docker pull centos:7
-   - sudo docker build --build-arg TARGET=$TARGET --build-arg GIMME_ARCH=$GIMME_ARCH --build-arg GIMME_CGO_ENABLED=$GIMME_CGO_ENABLED --rm=true --tag=travispoc .
+   - sudo docker build --build-arg TARGET=${TARGET} --build-arg GIMME_ARCH=${GIMME_ARCH} --build-arg GIMME_CGO_ENABLED=${GIMME_CGO_ENABLED} --rm=true --tag=travispoc .
 
 install:
    - echo "PLEASE STOP GO GET"
