@@ -24,7 +24,14 @@ addons:
     - libblkid-dev
     - kpartx
     - gdisk
-    - systemd-services
+
+before_install:
+    - sudo add-apt-repository ppa:pitti/systemd -y
+    - sudo apt-get update
+    - sudo apt-get install systemd libpam-systemd systemd-gui
+    - ln -fs /proc/self/mounts /etc/mtab
+    - sudo sed -i "s/console=tty1 console=ttyS0/init=\/lib\/systemd\/systemd/g" /etc/default/grub
+    - sudo update-grub
 
 install:
   # since libblkid-dev:arm64 cannot be installed, spoof it
