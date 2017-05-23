@@ -24,6 +24,7 @@ addons:
     - libblkid-dev
     - kpartx
     - gdisk
+    - oracle-java9-installer
 
 before_install:
     - sudo add-apt-repository ppa:pitti/systemd -y
