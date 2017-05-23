@@ -29,6 +29,6 @@ install:
    - echo "PLEASE STOP GO GET"
 
 script:
-   - sudo docker run --detach --privileged --volume=/sys/fs/cgroup:/sys/fs/cgroup:ro travispoc /usr/lib/systemd/systemd > /tmp/container_id
-   - sudo docker exec --build-arg TARGET=$TARGET --build-arg GIMME_ARCH=$GIMME_ARCH --build-arg GIMME_CGO_ENABLED=$GIMME_CGO_ENABLED "$(cat /tmp/container_id)" sudo -E /docker_test.sh
+   - sudo docker run --build-arg TARGET=$TARGET --build-arg GIMME_ARCH=$GIMME_ARCH --build-arg GIMME_CGO_ENABLED=$GIMME_CGO_ENABLED --detach --privileged --volume=/sys/fs/cgroup:/sys/fs/cgroup:ro travispoc /usr/lib/systemd/systemd > /tmp/container_id
+   - sudo docker exec "$(cat /tmp/container_id)" sudo -E /docker_test.sh
    - sudo docker stop "$(cat /tmp/container_id)"
