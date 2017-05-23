@@ -14,7 +14,7 @@ sudo yum group install "Development Tools" -y
 
 export GOPATH="/go"
 
-cd /go/github.com/coreos/ignition
+cd /go/src/github.com/coreos/ignition
 
 # since libblkid-dev:arm64 cannot be installed, spoof it
 if [ "${TARGET}" == "arm64" ]; then
