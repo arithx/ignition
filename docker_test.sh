@@ -5,7 +5,7 @@ sudo yum update
 curl -sL -o ~/bin/gimme https://raw.githubusercontent.com/travis-ci/gimme/master/gimme
 chmod +x ~/bin/gimme
 
-eval "$(gimme)"
+eval "$(gimme $GIMME_GO_VERSION)"
 
 sudo yum install git gcc-aarch64-linux-gnu libc6-dev-arm64-cross libblkid-devel kpartx gdisk -y
 
