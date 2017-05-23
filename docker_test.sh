@@ -12,6 +12,7 @@ eval "$(gimme 1.7)"
 sudo yum install git gcc-aarch64-linux-gnu libc6-dev-arm64-cross libblkid-devel kpartx gdisk -y
 
 export GOPATH="$(pwd)/go"
+PATH=$PATH:/bin/gcc
 
 mkdir go
 mkdir go/src
