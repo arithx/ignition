@@ -53,3 +53,4 @@ script:
                 GOARCH="${TARGET}" ./build;
                 file "bin/${TARGET}/ignition" | egrep 'aarch64';
         fi
+  - sudo cat /var/log/syslog | grep ignition
