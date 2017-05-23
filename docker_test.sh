@@ -1,7 +1,7 @@
 source /env_vars.sh
 
 sudo yum update
-sudo yum install git golang gcc-aarch64-linux-gnu libc6-dev-arm64-cross libblkid-dev kpartx gdisk -y
+sudo yum install git golang gcc-aarch64-linux-gnu libc6-dev-arm64-cross libblkid-devel kpartx gdisk -y
 
 export GOPATH="$(pwd)/go"
 
