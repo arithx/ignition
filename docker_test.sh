@@ -1,5 +1,5 @@
-sudo apt-get update
-sudo apt-get install git
+sudo yum update
+sudo yum install gcc-aarch64-linux-gnu libc6-dev-arm64-cross libblkid-dev kpartx gdisk
 
 git clone https://github.com/coreos/ignition
 
