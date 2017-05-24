@@ -46,7 +46,7 @@ type Partition struct {
 	Files          []File
 }
 
-func getBaseDisk() {
+func getBaseDisk() []*Partition {
 	return []*Partition{
 		{
 			Number:         1,
@@ -127,16 +127,18 @@ func TestIgnitionBlackBox(t *testing.T) {
 	in1[8].FilesystemType = "ext2"
 	out1 := getBaseDisk()
 	out1[8].Files = []File{
-		Name: "test",
-		Path: "ignition",
-		Content: []string{"asdf"},
+		{
+			Name:     "test",
+			Path:     "ignition",
+			Contents: []string{"asdf"},
+		},
 	}
 	tests := []struct {
 		in, out []*Partition
 		config  string
 	}{
 		{
-			in: in1,
+			in:  in1,
 			out: out1,
 			config: `{
 			    "ignition": {"version": "2.0.0"},
