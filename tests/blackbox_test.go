@@ -23,39 +23,140 @@ import (
 	"strconv"
 	"strings"
 	"testing"
-
-	yaml "github.com/go-yaml/yaml"
 )
 
 type File struct {
-	Name     string   `yaml:"name"`
-	Path     string   `yaml:"path"`
-	Contents []string `yaml:"contents,omitempty"`
+	Name     string
+	Path     string
+	Contents []string
 }
 
 type Partition struct {
-	Number         int    `yaml:"number"`
-	Label          string `yaml:"label"`
-	TypeCode       string `yaml:"typecode,omitempty"`
-	TypeGUID       string `yaml:"typeguid,omitempty"`
-	GUID           string `yaml:"guid,omitempty"`
-	Device         string `yaml:"device,omitempty"`
-	Offset         int    `yaml:"offset,omitempty"`
-	Length         int    `yaml:"length"`
-	FilesystemType string `yaml:"filesystemtype"`
-	MountPath      string `yaml:"mountpath,omitempty"`
-	Hybrid         bool   `yaml:"hybrid,omitempty"`
-	Files          []File `yaml:"files"`
+	Number         int
+	Label          string
+	TypeCode       string
+	TypeGUID       string
+	GUID           string
+	Device         string
+	Offset         int
+	Length         int
+	FilesystemType string
+	MountPath      string
+	Hybrid         bool
+	Files          []File
+}
+
+func getBaseDisk() []*Partition {
+	return []*Partition{
+		{
+			Number:         1,
+			Label:          "EFI-SYSTEM",
+			TypeCode:       "efi",
+			Length:         262144,
+			FilesystemType: "vfat",
+			Hybrid:         true,
+			Files: []File{
+				{
+					Name:     "multiLine",
+					Path:     "path/example",
+					Contents: []string{"line 1", "line 2"},
+				}, {
+					Name:     "singleLine",
+					Path:     "another/path/example",
+					Contents: []string{"single line"},
+				}, {
+					Name: "emptyFile",
+					Path: "empty",
+				}, {
+					Name: "noPath",
+					Path: "",
+				},
+			},
+		}, {
+			Number:   2,
+			Label:    "BIOS-BOOT",
+			TypeCode: "bios",
+			Length:   4096,
+		}, {
+			Number:         3,
+			Label:          "USR-A",
+			GUID:           "7130c94a-213a-4e5a-8e26-6cce9662f132",
+			TypeCode:       "coreos-rootfs",
+			Length:         2097152,
+			FilesystemType: "ext2",
+		}, {
+			Number:   4,
+			Label:    "USR-B",
+			GUID:     "e03dd35c-7c2d-4a47-b3fe-27f15780a57c",
+			TypeCode: "coreos-rootfs",
+			Length:   2097152,
+		}, {
+			Number:   5,
+			Label:    "ROOT-C",
+			GUID:     "d82521b4-07ac-4f1c-8840-ddefedc332f3",
+			TypeCode: "blank",
+			Length:   0,
+		}, {
+			Number:         6,
+			Label:          "OEM",
+			TypeCode:       "data",
+			Length:         262144,
+			FilesystemType: "ext4",
+		}, {
+			Number:   7,
+			Label:    "OEM-CONFIG",
+			TypeCode: "coreos-reserved",
+			Length:   131072,
+		}, {
+			Number:   8,
+			Label:    "coreos-reserved",
+			TypeCode: "blank",
+			Length:   0,
+		}, {
+			Number:         9,
+			Label:          "ROOT",
+			TypeCode:       "coreos-resize",
+			Length:         12943360,
+			FilesystemType: "ext4",
+		},
+	}
 }
 
 func TestIgnitionBlackBox(t *testing.T) {
+	in1 := getBaseDisk()
+	in1[8].FilesystemType = "ext2"
+	out1 := getBaseDisk()
+	out1[8].Files = []File{
+		{
+			Name:     "test",
+			Path:     "ignition",
+			Contents: []string{"asdf"},
+		},
+	}
 	tests := []struct {
-		in, out, config string
+		in, out []*Partition
+		config  string
 	}{
 		{
-			in:     "data/disk.yaml",
-			out:    "data/diskOut.yaml",
-			config: "data/config.ign",
+			in:  in1,
+			out: out1,
+			config: `{
+			    "ignition": {"version": "2.0.0"},
+			    "storage": {
+			        "filesystems": [{
+			            "mount": {
+			                "device": "$DEVICE",
+			                "format": "ext4",
+			                "create": {
+			                    "force": true
+			                }},
+			             "name": "test"}],
+			        "files": [{
+			            "filesystem": "test",
+			            "path": "/ignition/test",
+			            "contents": {"source": "data:,asdf"}
+			        }]}
+			}`,
 		},
 	}
 
@@ -64,17 +165,29 @@ func TestIgnitionBlackBox(t *testing.T) {
 	}
 }
 
-func outer(t *testing.T, inPath string, outPath string, config string) {
+func outer(t *testing.T, in []*Partition, out []*Partition, config string) {
 	imgName := "test.img"
-	in := parseYAML(t, inPath, false)
-	out := parseYAML(t, outPath, true)
 	imageSize := calculateImageSize(in)
+
+	// Finish data setup
+	for _, part := range in {
+		if part.GUID == "" {
+			part.GUID = generateUUID(t)
+		}
+		updateTypeGUID(t, part)
+	}
+	setOffsets(in)
+	for _, part := range out {
+		updateTypeGUID(t, part)
+	}
+	setOffsets(out)
 
 	// Creation
 	createVolume(t, imgName, imageSize, 20, 16, 63, in)
 	setDevices(t, imgName, in)
 	mountPartitions(t, in)
 	createFiles(t, in)
+	dumpDiskInfo(t, imgName, in)
 	unmountPartitions(t, in, imgName)
 
 	// Ignition
@@ -92,6 +205,28 @@ func outer(t *testing.T, inPath string, outPath string, config string) {
 	dumpDiskInfo(t, imgName, out)
 	validatePartitions(t, out, imgName)
 	validateFiles(t, out)
+
+	// Cleanup
+	unmountPartitions(t, out, imgName)
+	removeMountFolders(t, out)
+	removeFile(t, "config.ign")
+	removeFile(t, imgName)
+}
+
+func removeFile(t *testing.T, imgName string) {
+	err := os.Remove(imgName)
+	if err != nil {
+		t.Log(err)
+	}
+}
+
+func removeMountFolders(t *testing.T, partitions []*Partition) {
+	for _, p := range partitions {
+		err := os.RemoveAll(p.MountPath)
+		if err != nil {
+			t.Log(err)
+		}
+	}
 }
 
 func runIgnition(t *testing.T, stage string) {
@@ -137,13 +272,9 @@ func pickDevice(t *testing.T, partitions []*Partition, fileName string) string {
 }
 
 func updateIgnitionConfig(t *testing.T, config, device string) {
-	input, err := ioutil.ReadFile(config)
-	if err != nil {
-		t.Fatal(err)
-	}
-	data := string(input)
-	data = strings.Replace(data, "$DEVICE", device, -1)
-	err = ioutil.WriteFile("config.ign", []byte(data), 0644)
+	err := ioutil.WriteFile(
+		"config.ign", []byte(strings.Replace(
+			config, "$DEVICE", device, -1)), 0644)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -184,28 +315,6 @@ func dumpDiskInfo(t *testing.T, fileName string, partitions []*Partition) {
 		}
 		t.Log(string(sgdisk))
 	}
-}
-
-func parseYAML(t *testing.T, fileName string, out bool) []*Partition {
-	dat, err := ioutil.ReadFile(fileName)
-	if err != nil {
-		t.Fatal(err, string(dat))
-	}
-	p := []*Partition{}
-	err = yaml.Unmarshal(dat, &p)
-
-	for _, part := range p {
-		if !out {
-			if part.GUID == "" {
-				part.GUID = generateUUID(t)
-			}
-		}
-		updateTypeGUID(t, part)
-	}
-
-	setOffsets(p)
-
-	return p
 }
 
 func createVolume(
