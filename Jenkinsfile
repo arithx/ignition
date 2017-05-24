@@ -22,6 +22,6 @@ node('amd64 && docker') {
 
     stage('Build & Test') {
         CGO_ENABLED = (${params.GOARCH}=="arm64") ? 1 : 0
-        sh 'docker run --rm -e GOARCH=${params.GOARCH} -e CGO_ENABLED=${CGO_ENABLED} -u "$(id -u):$(id -g)" -v /etc/passwd:/etc/passwd:ro -v /etc/group:/etc/group:ro -v "$PWD":/usr/src/myapp -w /usr/src/myapp golang:1.8.1 ./test'
+        sh 'docker run --rm -e GOARCH=${params.GOARCH} -e CGO_ENABLED=${CGO_ENABLED} -u "$(id -u):$(id -g)" -v /etc/passwd:/etc/passwd:ro -v /etc/group:/etc/group:ro -v "$PWD":/usr/src/myapp -w /usr/src/myapp golang:${params.GOVERSION} ./test'
     }
 }
