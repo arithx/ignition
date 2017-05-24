@@ -36,3 +36,5 @@ elif [ "${TARGET}" == "arm64" ]; then
       GOARCH="${TARGET}" ./build;
       file "bin/${TARGET}/ignition" | egrep 'aarch64';
 fi
+
+journalctl --identifier=ignition --all --priority=7 --no-pager
