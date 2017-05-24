@@ -18,4 +18,4 @@ VOLUME [ "/sys/fs/cgroup" ]
 RUN yum install sudo -y
 RUN sudo chmod +x /env_vars.sh
 RUN sudo chmod +x /docker_test.sh
-CMD ["/usr/sbin/init"]
+CMD ["/sbin/init"]
