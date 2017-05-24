@@ -28,8 +28,6 @@ func WaitOnDevices(devs []string, stage string) error {
 		return err
 	}
 
-	fmt.Errorf("NewSystemdConnection passed")
-
 	results := map[string]chan string{}
 	for _, dev := range devs {
 		unitName := unit.UnitNamePathEscape(dev + ".device")
