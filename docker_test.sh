@@ -9,7 +9,7 @@ echo $GIMME_GO_VERSION
 #eval "$(gimme $GIMME_GO_VERSION)"
 eval "$(gimme 1.7)"
 
-sudo yum install git gcc-aarch64-linux-gnu libc6-dev-arm64-cross libblkid-devel kpartx gdisk dosfstools -y
+sudo yum install git gcc-aarch64-linux-gnu libc6-dev-arm64-cross libblkid-devel kpartx gdisk dosfstools e2fsprogs btrfs-progs -y
 sudo yum group install "Development Tools" -y
 
 export GOPATH="/go"
