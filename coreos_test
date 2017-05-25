@@ -6,4 +6,4 @@ GIMME_OUTPUT=$(./gimme _GOVERSION_) && eval $GIMME_OUTPUT
 
 export ACTION="NOBUILD"
 
-./test
+find -name "*.test" -exec '{}' ';'
