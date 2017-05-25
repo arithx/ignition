@@ -33,8 +33,6 @@ node('amd64 && docker') {
         sh 'sudo curl -sL -o ./gimme https://raw.githubusercontent.com/travis-ci/gimme/master/gimme'
         sh 'sudo chmod +x ./gimme'
 
-        sh 'GIMME_OUTPUT=$(./gimme ${GOVERSION}) && eval $GIMME_OUTPUT'
-
         /*
         sh 'sed -i "s/_GOVERSION_/${GOVERSION}/g" toolbox_build'
         sh 'sudo chmod +x ./docker_build'
@@ -49,6 +47,6 @@ node('amd64 && docker') {
         sh 'docker run --rm -e TARGET=${GOARCH} -e GOARCH=${GOARCH} -e CGO_ENABLED=${CGO_ENABLED} --privileged -u "$(id -u):$(id -g)" -v /etc/passwd:/etc/passwd:ro -v /etc/group:/etc/group:ro -v "$PWD":/usr/src/myapp -w /usr/src/myapp test chmod +x build;'
         sh 'docker run --rm -e TARGET=${GOARCH} -e GOARCH=${GOARCH} -e CGO_ENABLED=${CGO_ENABLED} --privileged -u "$(id -u):$(id -g)" -v /etc/passwd:/etc/passwd:ro -v /etc/group:/etc/group:ro -v "$PWD":/usr/src/myapp -w /usr/src/myapp test sudo -E "PATH=$PATH:/go/bin:/usr/local/go/bin" ./docker_build'
 
-        sh 'sudo -E ./test NOBUILD'
+        sh 'GIMME_OUTPUT=$(./gimme ${GOVERSION}) && eval $GIMME_OUTPUT; sudo -E ./test NOBUILD'
     }
 }
