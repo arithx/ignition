@@ -24,7 +24,7 @@ node('amd64 && docker') {
         GOARCH = params.GOARCH
         GOVERSION = params.GOVERSION
         CGO_ENABLED = (GOARCH=="arm64") ? 1 : 0
-        sed -i 's/$GOVERSION/${GOVERSION}/g' Dockerfile
+        sh 'sed -i "s/$GOVERSION/${GOVERSION}/g" Dockerfile'
         sudo docker build --rm=true
         sh 'docker run --rm -e GOARCH=${GOARCH} -e CGO_ENABLED=${CGO_ENABLED} -u "$(id -u):$(id -g)" -v /etc/passwd:/etc/passwd:ro -v /etc/group:/etc/group:ro -v "$PWD":/usr/src/myapp -w /usr/src/myapp golang:${GOVERSION} chmod +x docker_build; chmod +x test; chmod +x build; sudo ./docker_build'
     }
