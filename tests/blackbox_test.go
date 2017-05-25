@@ -388,6 +388,8 @@ func formatVFAT(t *testing.T, partition *Partition) {
 	}
 	opts = append(
 		opts, partition.Device)
+	o, e := exec.Command("ls", "/dev/mapper/").CombinedOutput()
+	t.Log(string(o), e)
 	out, err := exec.Command("/sbin/mkfs.vfat", opts...).CombinedOutput()
 	if err != nil {
 		t.Fatal("mkfs.vfat", err, string(out))
