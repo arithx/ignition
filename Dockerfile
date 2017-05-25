@@ -15,7 +15,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 		sudo \
 	&& rm -rf /var/lib/apt/lists/*
 
-ENV GOLANG_VERSION $GOVERSION
+ENV GOLANG_VERSION _GOVERSION_
 
 RUN set -eux; \
 	\
