@@ -16,6 +16,8 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 		uuid-runtime \
 		gdisk \
 		kpartx \
+		e2fsprogs \
+		dosfstools \
 	&& rm -rf /var/lib/apt/lists/*
 
 ENV GOLANG_VERSION _GOVERSION_
