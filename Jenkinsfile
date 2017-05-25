@@ -8,7 +8,7 @@ properties([
                choices: "amd64\narm64",
                description: 'target architecture for building binaries'),
         choice(name: 'GOVERSION',
-               choices: "1.7.6\n1.8.2",
+               choices: "1.7\n1.8",
                description: 'version of golang')
     ]),
 
