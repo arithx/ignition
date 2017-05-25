@@ -18,6 +18,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 		kpartx \
 		e2fsprogs \
 		dosfstools \
+		file \
 	&& rm -rf /var/lib/apt/lists/*
 
 ENV GOLANG_VERSION _GOVERSION_
