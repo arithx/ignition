@@ -34,6 +34,7 @@ node('amd64 && docker') {
         sh 'sudo chmod +x ./gimme'
 
         sh './gimme ${GOVERSION} >> env_vars'
+        sh 'echo "PATH=$PATH:/bin/gcc"'
 
         sh 'sudo chmod +x ./docker_build'
         sh 'sudo -E ./docker_build'
