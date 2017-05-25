@@ -19,7 +19,7 @@ export GOBIN=${PWD}/bin/${GOARCH}
 export GOPATH=${PWD}/gopath
 export CGO_ENABLED=1
 
-if [ "$1" != "NOGO" ]; then
+if [ "$1" != "NOBUILD" ]; then
 	echo "Building ${NAME}..."
 	go build -ldflags "${GLDFLAGS}" -o ${GOBIN}/${NAME} ${REPO_PATH}/internal
 fi

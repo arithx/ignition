@@ -2,8 +2,6 @@
 
 source ./env_vars
 
-echo $TARGET
-
 if [ "${TARGET}" == "arm64" ]; then
     echo "void blkid_new_probe_from_filename(void) {}" >> stub.c;
     echo "void blkid_do_probe(void) {}"                >> stub.c;
@@ -15,12 +13,10 @@ if [ "${TARGET}" == "arm64" ]; then
 fi
 
 if [ "${TARGET}" == "amd64" ]; then
-    /usr/bin/toolbox /bin/bash -c "cd /media/root$PWD; ./toolbox_build; source ./env_vars; ./build"
-    GOARCH="${TARGET}" ./test;
+    GOARCH="${TARGET}" ./test NOTEST;
 elif [ "${TARGET}" == "arm64" ]; then
     export CGO_LDFLAGS="-L ${PWD}";
     echo 'export CGO_LDFLAGS="-L ${PWD}";' >> env_vars
     GOARCH="${TARGET}";
-    /usr/bin/toolbox /bin/bash -c "cd /media/root$PWD; ./toolbox_build; source ./env_vars; ./build;"
     file "bin/${TARGET}/ignition" | egrep 'aarch64';
 fi
