@@ -4,6 +4,7 @@ source env_vars
 
 GIMME_OUTPUT=$(./gimme _GOVERSION_) && eval $GIMME_OUTPUT
 
-export ACTION="NOBUILD"
+find /mnt/hd* | xargs umount
+rm -rf /mnt/hd1*
 
 find -name "*.test" -exec '{}' ';'
