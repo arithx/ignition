@@ -11,6 +11,6 @@ rm -rf test.img
 OUT=$(find -name "*.test" -exec '{}' ';')
 echo $OUT
 
-if [ $OUT == *"FAIL"* ]; then
+if [ "$OUT" == *"FAIL"* ]; then
     return 1
 fi
