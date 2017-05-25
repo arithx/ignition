@@ -32,7 +32,7 @@ go vet $PKG_VET
 
 echo "Running tests..."
 if [ "$ACTION" != "NOTEST" ]; then
-	go test -timeout 60s -cover $@ ${PKG} --race
+	go test -timeout 60s -run -cover $@ ${PKG} --race
 fi
 
 echo "Success"
