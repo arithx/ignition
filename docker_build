@@ -1,6 +1,6 @@
 #!/bin/bash
 
-echo "${TARGET}"
+source ./env_vars
 
 if [ "${TARGET}" == "arm64" ]; then
     echo "void blkid_new_probe_from_filename(void) {}" >> stub.c;
