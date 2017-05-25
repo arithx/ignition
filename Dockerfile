@@ -14,6 +14,8 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     libblkid-dev \
 		sudo \
 		uuid-runtime \
+		gdisk \
+		kpartx \
 	&& rm -rf /var/lib/apt/lists/*
 
 ENV GOLANG_VERSION _GOVERSION_
