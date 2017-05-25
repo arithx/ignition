@@ -2,7 +2,7 @@
 
 set -eu
 
-source ./build
+source ./build "NOGO"
 
 SRC=$(find . -name '*.go' \
 	-not -path "./internal/vendor/*" \

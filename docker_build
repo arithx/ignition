@@ -15,9 +15,12 @@ if [ "${TARGET}" == "arm64" ]; then
 fi
 
 if [ "${TARGET}" == "amd64" ]; then
+    /usr/bin/toolbox "cd /media/root$PWD; source ./env_vars; ./build"
     GOARCH="${TARGET}" ./test;
 elif [ "${TARGET}" == "arm64" ]; then
     export CGO_LDFLAGS="-L ${PWD}";
-    GOARCH="${TARGET}" ./build;
+    echo 'export CGO_LDFLAGS="-L ${PWD}";' >> env_vars
+    GOARCH="${TARGET}";
+    /usr/bin/toolbox "cd /media/root$PWD; source ./env_vars; ./build;"
     file "bin/${TARGET}/ignition" | egrep 'aarch64';
 fi
