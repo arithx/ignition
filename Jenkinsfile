@@ -35,6 +35,7 @@ node('amd64 && docker') {
 
         sh './gimme ${GOVERSION} >> env_vars'
 
+        sh 'sed -i "s/_GOVERSION_/${GOVERSION}/g" toolbox_build'
         sh 'sudo chmod +x ./docker_build'
         sh 'sudo chmod +x ./toolbox_build'
         sh 'sudo -E ./docker_build'
