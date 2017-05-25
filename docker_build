@@ -15,7 +15,7 @@ if [ "${TARGET}" == "arm64" ]; then
 fi
 
 if [ "${TARGET}" == "amd64" ]; then
-    /usr/bin/toolbox "cd /media/root$PWD; source ./env_vars; ./build"
+    /usr/bin/toolbox "ls /media/root/; cd /media/root$PWD; source ./env_vars; ./build"
     GOARCH="${TARGET}" ./test;
 elif [ "${TARGET}" == "arm64" ]; then
     export CGO_LDFLAGS="-L ${PWD}";
