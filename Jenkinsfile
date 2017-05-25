@@ -33,7 +33,7 @@ node('amd64 && docker') {
         sh 'sudo curl -sL -o ./gimme https://raw.githubusercontent.com/travis-ci/gimme/master/gimme'
         sh 'sudo chmod +x ./gimme'
 
-        sh 'GIMME_OUTPUT=$(./gimme ${GOVERSION}) && eval "$GIMME_OUTPUT"'
+        sh './gimme ${GOVERSION} >> env_vars'
 
         sh 'sudo chmod +x ./docker_build'
         sh 'sudo -E ./docker_build'
