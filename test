@@ -5,10 +5,11 @@ set -eu
 source ./build
 
 SRC=$(find . -name '*.go' \
-  -not -path "./vendor/*")
+  -not -path "./vendor/*" \
+  -not -path "./tests/*")
 
 PKG=$(cd gopath/src/${REPO_PATH}; go list ./... | \
-	grep --invert-match vendor)
+	grep --invert-match vendor | grep --invert-match tests)
 
 # https://github.com/golang/go/issues/15067
 PKG_VET=$(cd gopath/src/${REPO_PATH}; go list ./... | \

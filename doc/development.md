@@ -38,3 +38,28 @@ Edit the `glide.yaml` file to update a dependency or add a new dependency. Then 
 ```sh
 make vendor
 ```
+
+## Running Blackbox Tests on Container Linux
+
+Build both the ignition & test binaries inside of a docker container, for this
+example it will be building from the ignition-builder-1.8 image and targeting
+the amd64 architecture.
+
+```sh
+docker run --rm -e TARGET=amd64 -e ACTION=COMPILE -v "$PWD":/usr/src/myapp -w /usr/src/myapp quay.io/coreos/ignition-builder-1.8 ./test
+sudo -E PATH=$PATH:$PWD/bin/amd64 ./tests.test
+```
+
+## Test Host System Dependencies
+
+The following packages are required by the Blackbox Test:
+
+* `util-linux`
+* `kpartx`
+* `dosfstools`
+* `e2fsprogs`
+* `btrfs-progs`
+* `xfsprogs`
+* `uuid-runtime`
+* `gdisk`
+* `coreutils`
