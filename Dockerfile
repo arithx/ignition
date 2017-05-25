@@ -10,9 +10,9 @@ RUN apt-get update && apt-get install --force-yes -y --no-install-recommends \
 		libc6-dev \
 		make \
 		pkg-config \
-    gcc-4.8-aarch64-linux-gnu \
-    libc6-dev-arm64-cross \
-    libblkid-dev \
+		gcc-4.8-aarch64-linux-gnu \
+		libc6-dev-arm64-cross \
+		libblkid-dev \
 		sudo \
 		uuid-runtime \
 		gdisk \

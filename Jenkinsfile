@@ -23,7 +23,10 @@ node('amd64 && docker') {
     stage('Build & Test') {
         GOARCH = params.GOARCH
         GOVERSION = params.GOVERSION
-        CGO_ENABLED = (GOARCH=="arm64") ? 1 : 0
+        CGO_ENABLED = 0
+        if (GOARCH=="arm64") {
+            CGO_ENABLED = 1
+        }
 
         sh 'echo export TARGET=${GOARCH} > env_vars'
         sh 'echo export GOARCH=${GOARCH} >> env_vars'
