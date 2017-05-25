@@ -6,8 +6,8 @@ if [ "${TARGET}" == "amd64" ]; then
     export ACTION="NOTEST"
     GOARCH="${TARGET}" ./test;
 elif [ "${TARGET}" == "arm64" ]; then
-    export CGO_ENABLED=1
-    echo 'export CGO_ENABLED=1' >> env_vars
+    export CGO_ENABLED="1"
+    echo 'export CGO_ENABLED="1"' >> env_vars
     export CGO_LDFLAGS="-L ${PWD}";
     echo 'export CGO_LDFLAGS="-L ${PWD}";' >> env_vars
     export ACTION="BUILD"

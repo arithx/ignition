@@ -23,9 +23,9 @@ node('amd64 && docker') {
     stage('Build & Test') {
         GOARCH = params.GOARCH
         GOVERSION = params.GOVERSION
-        CGO_ENABLED = 0
+        CGO_ENABLED = "0"
         if (GOARCH=="arm64") {
-            CGO_ENABLED = 1
+            CGO_ENABLED = "1"
         }
 
         sh 'echo export TARGET=${GOARCH} > env_vars'
@@ -36,8 +36,12 @@ node('amd64 && docker') {
         sh 'sudo curl -sL -o ./gimme https://raw.githubusercontent.com/travis-ci/gimme/master/gimme'
         sh 'sudo chmod +x ./gimme'
 
-        sh 'sed -i "s/_GOVERSION_/${GOVERSION}/g" Dockerfile'
-        sh 'docker build --rm --tag=test .'
+        if (GOARCH=="amd64") {
+            sh 'sed -i "s/_GOVERSION_/${GOVERSION}/g" Dockerfile'
+            sh 'docker build --rm --tag=test .'
+        } else {
+            sh 'docker build --rm --tag=test golang:${GOVERSION}'
+        }
         sh 'docker run --rm -e TARGET=${GOARCH} -e GOARCH=${GOARCH} -e CGO_ENABLED=${CGO_ENABLED} --privileged -u "$(id -u):$(id -g)" -v /etc/passwd:/etc/passwd:ro -v /etc/group:/etc/group:ro -v "$PWD":/usr/src/myapp -w /usr/src/myapp test chmod +x docker_build;'
         sh 'docker run --rm -e TARGET=${GOARCH} -e GOARCH=${GOARCH} -e CGO_ENABLED=${CGO_ENABLED} --privileged -u "$(id -u):$(id -g)" -v /etc/passwd:/etc/passwd:ro -v /etc/group:/etc/group:ro -v "$PWD":/usr/src/myapp -w /usr/src/myapp test chmod +x test;'
         sh 'docker run --rm -e TARGET=${GOARCH} -e GOARCH=${GOARCH} -e CGO_ENABLED=${CGO_ENABLED} --privileged -u "$(id -u):$(id -g)" -v /etc/passwd:/etc/passwd:ro -v /etc/group:/etc/group:ro -v "$PWD":/usr/src/myapp -w /usr/src/myapp test chmod +x build;'
