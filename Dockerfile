@@ -1,5 +1,7 @@
 FROM buildpack-deps:jessie-scm
 
+RUN echo "deb http://deb.debian.org/debian stretch main" >> /etc/apt/sources.list
+
 # gcc for cgo
 RUN apt-get update && apt-get install -y --no-install-recommends \
 		g++ \
