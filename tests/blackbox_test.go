@@ -231,7 +231,7 @@ func removeMountFolders(t *testing.T, partitions []*Partition) {
 
 func runIgnition(t *testing.T, stage string) {
 	out, err := exec.Command(
-		"ignition", "-clear-cache", "-oem",
+		"bin/amd64/ignition", "-clear-cache", "-oem",
 		"file", "-stage", stage).CombinedOutput()
 	debugInfo, derr := ioutil.ReadFile("/var/log/syslog")
 	if derr == nil {
