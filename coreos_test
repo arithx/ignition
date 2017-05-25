@@ -1,0 +1,7 @@
+#!/bin/bash
+
+source env_vars
+
+GIMME_OUTPUT=$(./gimme _GOVERSION_) && eval $GIMME_OUTPUT
+
+./test NOBUILD
