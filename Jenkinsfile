@@ -26,6 +26,10 @@ node('amd64 && docker') {
         GOVERSION = params.GOVERSION
         CGO_ENABLED = (TARGET=="arm64") ? 1 : 0
 
+        sh 'export TARGET=${TARGET}'
+        sh 'export GOARCH=${GOARCH}'
+        sh 'export CGO_ENABLED=${CGO_ENABLED}'
+
         sh 'sudo curl -sL -o ./gimme https://raw.githubusercontent.com/travis-ci/gimme/master/gimme'
         sh 'sudo chmod +x ./gimme'
 
