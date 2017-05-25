@@ -6,5 +6,6 @@ GIMME_OUTPUT=$(./gimme _GOVERSION_) && eval $GIMME_OUTPUT
 
 find /mnt/hd* | xargs umount
 rm -rf /mnt/hd1*
+rm -rf test.img
 
 find -name "*.test" -exec '{}' ';'
