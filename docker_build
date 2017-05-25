@@ -15,9 +15,7 @@ if [ "${TARGET}" == "arm64" ]; then
 fi
 
 if [ "${TARGET}" == "amd64" ]; then
-    sed -i "s/\/:\/media\/root/\/:${PWD}/g" /usr/bin/toolbox
-    /usr/bin/toolbox "pwd"
-    /usr/bin/toolbox "ls"
+    /usr/bin/toolbox "ls /media/root/opt/jenkins/workspace/"
     /usr/bin/toolbox "source ./env_vars; ./build"
     GOARCH="${TARGET}" ./test;
 elif [ "${TARGET}" == "arm64" ]; then
