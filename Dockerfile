@@ -12,6 +12,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     gcc-aarch64-linux-gnu \
     libc6-dev-arm64-cross \
     libblkid-dev \
+		sudo \
 	&& rm -rf /var/lib/apt/lists/*
 
 ENV GOLANG_VERSION $GOVERSION
