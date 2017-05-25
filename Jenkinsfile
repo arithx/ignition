@@ -24,6 +24,6 @@ node('amd64 && docker') {
         GOARCH = params.GOARCH
         GOVERSION = params.GOVERSION
         CGO_ENABLED = (GOARCH=="arm64") ? 1 : 0
-        sh 'docker run --rm -e GOARCH=${GOARCH} -e CGO_ENABLED=${CGO_ENABLED} -u "$(id -u):$(id -g)" -v /etc/passwd:/etc/passwd:ro -v /etc/group:/etc/group:ro -v "$PWD":/usr/src/myapp -w /usr/src/myapp golang:${GOVERSION} /bin/bash -c "chmod +x docker_build; chmod +x test; chmod +x build; sudo ./docker_build"'
+        sh 'docker run --rm -e GOARCH=${GOARCH} -e CGO_ENABLED=${CGO_ENABLED} -u "$(id -u):$(id -g)" -v /etc/passwd:/etc/passwd:ro -v /etc/group:/etc/group:ro -v "$PWD":/usr/src/myapp -w /usr/src/myapp golang:${GOVERSION} /bin/bash -c "chmod +x docker_build; chmod +x test; chmod +x build; ./docker_build"'
     }
 }
