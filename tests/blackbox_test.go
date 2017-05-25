@@ -497,7 +497,7 @@ func kpartxAdd(t *testing.T, fileName string) string {
 	if err != nil {
 		t.Fatal("kpartx", err, string(kpartxOut))
 	}
-	kpartxOut, err := exec.Command(
+	kpartxOut, err = exec.Command(
 		"/sbin/kpartx", "-l", fileName).CombinedOutput()
 	t.Log(string(kpartxOut), err)
 	return strings.Trim(strings.Split(string(kpartxOut), " ")[4], "/dev/")
