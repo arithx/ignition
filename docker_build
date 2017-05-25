@@ -15,20 +15,12 @@ if [ "${TARGET}" == "arm64" ]; then
 fi
 
 if [ "${TARGET}" == "amd64" ]; then
-    echo "/usr/bin/toolbox"
-    cat /usr/bin/toolbox
-    echo "/etc/default/toolbox"
-    cat /etc/default/toolbox
-    echo "ls $PWD"
-    ls /opt/jenkins/workspace/testIgnition
-    /usr/bin/toolbox /bin/bash -c "ls /media/"
-    /usr/bin/toolbox /bin/bash -c "ls /media/root/opt/jenkins/workspace/"
-    /usr/bin/toolbox /bin/bash -c "cd /media/root$PWD; source ./env_vars; ./build"
+    /usr/bin/toolbox /bin/bash -c "cd /media/root$PWD; ./toolbox_build; source ./env_vars; ./build"
     GOARCH="${TARGET}" ./test;
 elif [ "${TARGET}" == "arm64" ]; then
     export CGO_LDFLAGS="-L ${PWD}";
     echo 'export CGO_LDFLAGS="-L ${PWD}";' >> env_vars
     GOARCH="${TARGET}";
-    /usr/bin/toolbox /bin/bash -c "cd /media/root$PWD; source ./env_vars; ./build;"
+    /usr/bin/toolbox /bin/bash -c "cd /media/root$PWD; ./toolbox_build; source ./env_vars; ./build;"
     file "bin/${TARGET}/ignition" | egrep 'aarch64';
 fi
