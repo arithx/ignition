@@ -53,7 +53,7 @@ func getBaseDisk() []*Partition {
 			Label:          "EFI-SYSTEM",
 			TypeCode:       "efi",
 			Length:         262144,
-			FilesystemType: "vfat",
+			FilesystemType: "ext2",
 			Hybrid:         true,
 			Files: []File{
 				{
@@ -352,7 +352,6 @@ func createVolume(
 
 func setDevices(t *testing.T, fileName string, partitions []*Partition) {
 	loopDevice := kpartxAdd(t, fileName)
-	t.Log(fmt.Sprintf("Loop Device: %s", loopDevice))
 
 	for _, partition := range partitions {
 		if partition.TypeCode == "blank" || partition.FilesystemType == "" {
@@ -388,8 +387,6 @@ func formatVFAT(t *testing.T, partition *Partition) {
 	}
 	opts = append(
 		opts, partition.Device)
-	o, e := exec.Command("ls", "/dev/mapper/").CombinedOutput()
-	t.Log(string(o), e)
 	out, err := exec.Command("/sbin/mkfs.vfat", opts...).CombinedOutput()
 	if err != nil {
 		t.Fatal("mkfs.vfat", err, string(out))
@@ -500,13 +497,7 @@ func kpartxAdd(t *testing.T, fileName string) string {
 	if err != nil {
 		t.Fatal("kpartx", err, string(kpartxOut))
 	}
-	kpartxOut, err = exec.Command(
-		"/sbin/kpartx", "-l", fileName).CombinedOutput()
-	if err != nil {
-		t.Fatal("kpartx -l", err, string(kpartxOut))
-	}
-	t.Log(string(kpartxOut))
-	return strings.Trim(strings.Split(string(kpartxOut), " ")[4], "/dev/")
+	return strings.Trim(strings.Split(string(kpartxOut), " ")[7], "/dev/")
 }
 
 func mountPartitions(t *testing.T, partitions []*Partition) {
