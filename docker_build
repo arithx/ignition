@@ -2,16 +2,6 @@
 
 source ./env_vars
 
-if [ "${TARGET}" == "arm64" ]; then
-    echo "void blkid_new_probe_from_filename(void) {}" >> stub.c;
-    echo "void blkid_do_probe(void) {}"                >> stub.c;
-    echo "void blkid_probe_has_value(void) {}"         >> stub.c;
-    echo "void blkid_probe_lookup_value(void) {}"      >> stub.c;
-    echo "void blkid_free_probe(void) {}"              >> stub.c;
-    aarch64-linux-gnu-gcc-6 -c -o stub.o stub.c;
-    aarch64-linux-gnu-gcc-ar-6 cq libblkid.a stub.o;
-fi
-
 if [ "${TARGET}" == "amd64" ]; then
     export ACTION="NOTEST"
     GOARCH="${TARGET}" ./test;
