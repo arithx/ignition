@@ -352,6 +352,7 @@ func createVolume(
 
 func setDevices(t *testing.T, fileName string, partitions []*Partition) {
 	loopDevice := kpartxAdd(t, fileName)
+	t.Log(fmt.Sprintf("Loop Device: %s", loopDevice))
 
 	for _, partition := range partitions {
 		if partition.TypeCode == "blank" || partition.FilesystemType == "" {
@@ -497,6 +498,7 @@ func kpartxAdd(t *testing.T, fileName string) string {
 	if err != nil {
 		t.Fatal("kpartx", err, string(kpartxOut))
 	}
+	t.Log(string(kpartxOut))
 	return strings.Trim(strings.Split(string(kpartxOut), " ")[7], "/dev/")
 }
 
