@@ -28,7 +28,7 @@ node('amd64 && docker') {
 
         sh 'mkdir ~/bin'
         sh 'sudo curl -sL -o ~/bin/gimme https://raw.githubusercontent.com/travis-ci/gimme/master/gimme'
-        sh 'chmod +x ~/bin/gimme'
+        sh 'sudo chmod +x ~/bin/gimme'
 
         sh 'GIMME_OUTPUT=$(gimme ${GOVERSION}) && eval "$GIMME_OUTPUT"'
 
