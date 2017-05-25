@@ -1,9 +1,0 @@
-#!/bin/bash
-
-dnf update
-dnf install gcc-aarch64-linux-gnu libc6-dev-arm64-cross libblkid-dev kpartx gdisk git -y
-
-curl -sL -o ./gimme https://raw.githubusercontent.com/travis-ci/gimme/master/gimme'
-chmod +x ./gimme'
-
-GIMME_OUTPUT=$(./gimme _GOVERSION_) && eval $GIMME_OUTPUT

@@ -8,4 +8,9 @@ find /mnt/hd* | xargs umount
 rm -rf /mnt/hd1*
 rm -rf test.img
 
-find -name "*.test" -exec '{}' ';'
+OUT=$(find -name "*.test" -exec '{}' ';')
+echo $OUT
+
+if [ $OUT == *"FAIL"* ]; then
+    return 1
+fi
