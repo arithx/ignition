@@ -26,6 +26,7 @@ node('amd64 && docker') {
         GOVERSION = params.GOVERSION
         CGO_ENABLED = (TARGET=="arm64") ? 1 : 0
 
+        sh 'mkdir ~/bin'
         sh 'sudo curl -sL -o ~/bin/gimme https://raw.githubusercontent.com/travis-ci/gimme/master/gimme'
         sh 'chmod +x ~/bin/gimme'
 
