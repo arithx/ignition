@@ -4,4 +4,6 @@ source env_vars
 
 GIMME_OUTPUT=$(./gimme _GOVERSION_) && eval $GIMME_OUTPUT
 
-./test NOBUILD
+export ACTION="NOBUILD"
+
+./test
