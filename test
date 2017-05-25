@@ -1,5 +1,7 @@
 #!/usr/bin/env bash
 
+echo "ENTERED TEST"
+
 set -eu
 
 source ./build
