@@ -1,15 +1,16 @@
 FROM golang:_GOVERSION_
 
 RUN echo "deb http://deb.debian.org/debian stretch main" >> /etc/apt/sources.list
+RUN echo "deb http://us.archive.ubuntu.com/ubuntu/ trusty main " >> /etc/apt/sources.list
 
 # gcc for cgo
 RUN apt-get update && apt-get install -y --no-install-recommends \
 		g++ \
-		gcc \
+		gcc-4.8 \
 		libc6-dev \
 		make \
 		pkg-config \
-    gcc-aarch64-linux-gnu \
+    gcc-4.8-aarch64-linux-gnu \
     libc6-dev-arm64-cross \
     libblkid-dev \
 		sudo \
