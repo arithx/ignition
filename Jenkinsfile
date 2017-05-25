@@ -27,5 +27,5 @@ node('amd64 && docker') {
         sh 'sed -i "s/_GOVERSION_/${GOVERSION}/g" Dockerfile'
         sh 'docker build --rm --tag=test .'
     }
-    sh 'docker run --rm -e GOARCH=${GOARCH} -e CGO_ENABLED=${CGO_ENABLED} --privileged -u "r" -v /etc/passwd:/etc/passwd:ro -v /etc/group:/etc/group:ro -v "$PWD":/usr/src/myapp -w /usr/src/myapp test /bin/bash -c "chmod +x docker_build; chmod +x test; chmod +x build; echo \"\" | sudo ./docker_build"'
+    sh 'docker run --rm -e GOARCH=${GOARCH} -e CGO_ENABLED=${CGO_ENABLED} --privileged -u "r" -v /etc/passwd:/etc/passwd:ro -v /etc/group:/etc/group:ro -v "$PWD":/usr/src/myapp -w /usr/src/myapp test /bin/bash -c "chmod +x docker_build; chmod +x test; chmod +x build; sudo ./docker_build"'
 }
