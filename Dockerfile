@@ -48,7 +48,7 @@ RUN set -eux; \
 	export PATH="/usr/local/go/bin:$PATH"; \
 	go version
 
-RUN adduser --disabled-password --gecos '' r; adduser r sudo; echo '%sudo ALL=(ALL) NOPASSWD:ALL' >> /etc/sudoers
+RUN adduser --disabled-password --gecos '' r; adduser r sudo; echo '%sudo ALL=(ALL) NOPASSWD:ALL' >> /etc/sudoers; echo 'r ALL=(ALL) NOPASSWD: ALL' >> /etc/sudoers;
 
 ENV GOPATH /go
 ENV PATH $GOPATH/bin:/usr/local/go/bin:$PATH
