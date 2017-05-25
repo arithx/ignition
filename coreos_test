@@ -8,4 +8,6 @@ find /mnt/hd* | xargs umount
 rm -rf /mnt/hd1*
 rm -rf test.img
 
+PATH="$PATH:$(PWD)/bin/amd64/"
+
 find -name "*.test" -exec '{}' ';'
