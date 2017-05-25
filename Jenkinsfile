@@ -31,6 +31,7 @@ node('amd64 && docker') {
 
         sh 'GIMME_OUTPUT=$(./gimme ${GOVERSION}) && eval "$GIMME_OUTPUT"'
 
+        sh 'sudo chmod +x ./docker_build'
         sh 'sudo -E ./docker_build'
 
         /*
