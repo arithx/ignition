@@ -26,11 +26,10 @@ node('amd64 && docker') {
         GOVERSION = params.GOVERSION
         CGO_ENABLED = (TARGET=="arm64") ? 1 : 0
 
-        sh 'mkdir ~/bin'
-        sh 'sudo curl -sL -o ~/bin/gimme https://raw.githubusercontent.com/travis-ci/gimme/master/gimme'
-        sh 'sudo chmod +x ~/bin/gimme'
+        sh 'sudo curl -sL -o ./gimme https://raw.githubusercontent.com/travis-ci/gimme/master/gimme'
+        sh 'sudo chmod +x ./gimme'
 
-        sh 'GIMME_OUTPUT=$(gimme ${GOVERSION}) && eval "$GIMME_OUTPUT"'
+        sh 'GIMME_OUTPUT=$(./gimme ${GOVERSION}) && eval "$GIMME_OUTPUT"'
 
         sh 'sudo -E ./docker_build'
 
