@@ -29,6 +29,7 @@ node('amd64 && docker') {
         sh 'echo export TARGET=${TARGET} >> env_vars'
         sh 'echo export GOARCH=${GOARCH} >> env_vars'
         sh 'echo export CGO_ENABLED=${CGO_ENABLED} >> env_vars'
+        sh 'cat env_vars'
 
         sh 'sudo curl -sL -o ./gimme https://raw.githubusercontent.com/travis-ci/gimme/master/gimme'
         sh 'sudo chmod +x ./gimme'
