@@ -5,7 +5,7 @@ properties([
 
     parameters([
         choice(name: 'GOARCH',
-               choices: "amd64\narm64",
+               choices: "amd64",
                description: 'target architecture for building binaries'),
         choice(name: 'GOVERSION',
                choices: "1.7\n1.8",
@@ -24,9 +24,6 @@ node('amd64 && docker') {
         GOARCH = params.GOARCH
         GOVERSION = params.GOVERSION
         CGO_ENABLED = "0"
-        if (GOARCH=="arm64") {
-            CGO_ENABLED = "1"
-        }
 
         sh 'echo export TARGET=${GOARCH} > env_vars'
         sh 'echo export GOARCH=${GOARCH} >> env_vars'
