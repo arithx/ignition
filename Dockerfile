@@ -4,7 +4,7 @@ RUN echo "deb http://deb.debian.org/debian stretch main" >> /etc/apt/sources.lis
 RUN echo "deb http://us.archive.ubuntu.com/ubuntu/ trusty main " >> /etc/apt/sources.list
 
 # gcc for cgo
-RUN apt-get update && apt-get install --force-yes -y --no-install-recommends \
+RUN apt-get update && apt-get install --force-yes -y \
 		g++ \
 		gcc-4.8 \
 		libc6-dev \
