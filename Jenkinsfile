@@ -16,7 +16,6 @@ def test_ignition(GOVERSION)
         stage("Build & Test $GOVERSION") {
             def GOARCH = "amd64"
             def CGO_ENABLED = "0"
-            def GOVERSION = GOVERSION
             if (GOARCH=="arm64") {
                 CGO_ENABLED = "1"
             }
