@@ -35,8 +35,6 @@ def test_ignition(GOVERSION)
 
             sh "sed -i 's/_GOVERSION_/$GOVERSION/g' coreos_test"
             sh 'sudo chmod +x ./coreos_test; sudo -E ./coreos_test'
-
-            sh 'docker rm'
         }
     }
 }
