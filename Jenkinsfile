@@ -26,14 +26,14 @@ def test_ignition(GOVERSION)
             sh "echo export GOVERSION=${GOVERSION} >> env_vars"
             sh 'cat env_vars'
 
-            sh 'sed -i "s/_GOVERSION_/${GOVERSION}/g" Dockerfile'
+            sh "sed -i 's/_GOVERSION_/$GOVERSION/g' Dockerfile"
             sh 'docker build --rm --tag=test .'
             sh 'docker run --rm -e TARGET=${GOARCH} -e GOARCH=${GOARCH} -e CGO_ENABLED=${CGO_ENABLED} --privileged -u "$(id -u):$(id -g)" -v /etc/passwd:/etc/passwd:ro -v /etc/group:/etc/group:ro -v "$PWD":/usr/src/myapp -w /usr/src/myapp test chmod +x docker_build;'
             sh 'docker run --rm -e TARGET=${GOARCH} -e GOARCH=${GOARCH} -e CGO_ENABLED=${CGO_ENABLED} --privileged -u "$(id -u):$(id -g)" -v /etc/passwd:/etc/passwd:ro -v /etc/group:/etc/group:ro -v "$PWD":/usr/src/myapp -w /usr/src/myapp test chmod +x test;'
             sh 'docker run --rm -e TARGET=${GOARCH} -e GOARCH=${GOARCH} -e CGO_ENABLED=${CGO_ENABLED} --privileged -u "$(id -u):$(id -g)" -v /etc/passwd:/etc/passwd:ro -v /etc/group:/etc/group:ro -v "$PWD":/usr/src/myapp -w /usr/src/myapp test chmod +x build;'
             sh 'docker run --rm -e TARGET=${GOARCH} -e GOARCH=${GOARCH} -e CGO_ENABLED=${CGO_ENABLED} --privileged -u "$(id -u):$(id -g)" -v /etc/passwd:/etc/passwd:ro -v /etc/group:/etc/group:ro -v "$PWD":/usr/src/myapp -w /usr/src/myapp test sudo -E "PATH=$PATH:/go/bin:/usr/local/go/bin" ./docker_build'
 
-            sh 'sed -i "s/_GOVERSION_/${GOVERSION}/g" coreos_test'
+            sh "sed -i 's/_GOVERSION_/$GOVERSION/g' coreos_test"
             sh 'sudo chmod +x ./coreos_test; sudo -E ./coreos_test'
 
             sh 'docker rm'
