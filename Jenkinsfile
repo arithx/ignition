@@ -20,6 +20,7 @@ def test_ignition(GOVERSION)
             if (GOARCH=="arm64") {
                 CGO_ENABLED = "1"
             }
+            echo "$GOVERSION $GOARCH $CGO_ENABLED"
 
             sh "echo export TARGET=${GOARCH} > env_vars"
             sh "echo export GOARCH=${GOARCH} >> env_vars"
