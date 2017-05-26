@@ -10,7 +10,6 @@ elif [ "${TARGET}" == "arm64" ]; then
     export CGO_LDFLAGS="-L ${PWD}";
     echo 'export CGO_LDFLAGS="-L ${PWD}";' >> env_vars
     export ACTION="BUILD"
-    export PATH=$PATH:GOBIN
     source ./env_vars
     GOARCH="${TARGET}" ./build;
     file "bin/${TARGET}/ignition" | egrep 'aarch64';
