@@ -6,11 +6,8 @@ if [ "${TARGET}" == "amd64" ]; then
     export ACTION="NOTEST"
     GOARCH="${TARGET}" ./test;
 elif [ "${TARGET}" == "arm64" ]; then
-    unset CGO_ENABLED
     export CGO_LDFLAGS="-L ${PWD}";
-    echo 'export CGO_LDFLAGS="-L ${PWD}";' >> env_vars
     export ACTION="BUILD"
-    source ./env_vars
     GOARCH="${TARGET}" ./build;
     file "bin/${TARGET}/ignition" | egrep 'aarch64';
 fi
