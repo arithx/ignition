@@ -1,7 +1,5 @@
 #!/bin/bash
 
-source ./env_vars
-
 if [ "${TARGET}" == "amd64" ]; then
     export ACTION="NOTEST"
     GOARCH="${TARGET}" ./test;
