@@ -8,20 +8,15 @@ properties([
 
 def test_ignition(ARCH, GOVERSION)
 {
-    node('amd64 && docker') {
-        withEnv(["TARGET=amd64", "CGO_ENABLED=0",
-                 "GOARCH=amd64", "GOVERSION=${GOVERSION}"]) {
+    node("${ARCH} && docker") {
+        def CGO = (ARCH == 'arm64') ? 1 : 0
+        withEnv(["TARGET=${ARCH}", "CGO_ENABLED=${CGO}",
+                 "GOARCH=${ARCH}", "GOVERSION=${GOVERSION}"]) {
             stage("SCM $GOVERSION") {
                 checkout scm
             }
 
             stage("Build & Test $GOVERSION") {
-                def GOARCH = "amd64"
-                def CGO_ENABLED = "0"
-                if (GOARCH=="arm64") {
-                    CGO_ENABLED = "1"
-                }
-
                 sh '''#!/bin/bash -ex
 
 sed -i "s/_GOVERSION_/$GOVERSION/g" Dockerfile
