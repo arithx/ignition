@@ -1,11 +1,28 @@
 #!/bin/bash
 
-find /mnt/hd* | xargs umount
-rm -rf /mnt/hd1*
-rm -rf test.img
+cleanup()
+{
+    if [ "$(cat /proc/mounts | grep /mnt/hd)" != "" ]; then
+        find /mnt/hd* | xargs umount
+    fi
+
+    if [ ! $(ls /mnt/hd* 1> /dev/null 2>&1;) ]; then
+        rm -rf /mnt/hd1*
+    fi
+
+    if [ ! -d "test.img" ]; then
+        rm -rf test.img
+    fi
+}
+
+# Run cleanup in case a previous run left the system unclean
+cleanup
 
 OUT=$(find -name "*.test" -exec '{}' ';')
 echo $OUT
+
+# Run cleanup before potentially exiting
+cleanup
 
 if [ "$OUT" == *"FAIL"* ]; then
     return 1

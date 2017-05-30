@@ -1,7 +1,7 @@
 #!/bin/bash
 
 if [ "${TARGET}" == "amd64" ]; then
-    export ACTION="NOTEST"
+    export ACTION="COMPILE"
     GOARCH="${TARGET}" ./test;
 elif [ "${TARGET}" == "arm64" ]; then
     export CGO_LDFLAGS="-L ${PWD}";
