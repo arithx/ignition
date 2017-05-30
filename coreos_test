@@ -18,6 +18,8 @@ cleanup()
 # Run cleanup in case a previous run left the system unclean
 cleanup
 
+binPath="$(pwd)/bin/amd64"
+export PATH=$PATH:$binPath
 OUT=$(find -name "*.test" -exec '{}' ';')
 echo $OUT
 
