@@ -39,8 +39,11 @@ sudo chmod +x ./coreos_test; sudo -E ./coreos_test
 }
 
 
-['amd64'].each { arch ->
-    ['1.7', '1.8'].each { gover ->
+def archs = ['amd64']
+def govers = ['1.7', '1.8']
+
+for (string arch : archs) {
+    for (string gover : govers) {
         test_ignition(arch, gover)
     }
 }
