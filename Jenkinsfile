@@ -6,7 +6,7 @@ properties([
     pipelineTriggers([pollSCM('H/15 * * * *')])
 ])
 
-def test_ignition(GOVERSION)
+def test_ignition(ARCH, GOVERSION)
 {
     node('amd64 && docker') {
         withEnv(["TARGET=amd64", "CGO_ENABLED=0",
@@ -38,5 +38,9 @@ sudo chmod +x ./coreos_test; sudo -E ./coreos_test
     }
 }
 
-test_ignition("1.7")
-test_ignition("1.8")
+
+['amd64'].each { arch ->
+    ['1.7', '1.8'].each { gover ->
+        test_ignition(arch, gover)
+    }
+}
