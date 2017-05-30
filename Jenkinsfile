@@ -42,8 +42,8 @@ sudo chmod +x ./coreos_test; sudo -E ./coreos_test
 def archs = ['amd64']
 def govers = ['1.7', '1.8']
 
-for (string arch : archs) {
-    for (string gover : govers) {
+for (String arch : archs) {
+    for (String gover : govers) {
         test_ignition(arch, gover)
     }
 }
