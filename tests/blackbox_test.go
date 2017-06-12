@@ -275,7 +275,7 @@ func outer(t *testing.T, test Test) {
 	mountPartitions(t, test.in)
 	createFiles(t, test.in)
 	dumpDiskInfo(t, imgName, test.in)
-	unmountPartitions(t, test.in, imgName)
+	unmountPartitions(t, test.in)
 
 	// Ignition
 	for _, d := range test.mntDevices {
@@ -297,7 +297,8 @@ func outer(t *testing.T, test Test) {
 	validateUnits(t, test.units, root)
 
 	// Cleanup
-	unmountPartitions(t, test.out, imgName)
+	unmountPartitions(t, test.out)
+	unmountRootPartition(t, test.out)
 	removeMountFolders(t, test.out)
 	removeFile(t, "config.ign")
 	removeFile(t, imgName)
@@ -709,7 +710,20 @@ func createFiles(t *testing.T, partitions []*Partition) {
 	}
 }
 
-func unmountPartitions(t *testing.T, partitions []*Partition, fileName string) {
+func unmountRootPartition(t *testing.T, partitions []*Partition) {
+	for _, partition := range partitions {
+		if partition.Label != "ROOT" {
+			continue
+		}
+		umountOut, err := exec.Command(
+			"/bin/umount", partition.Device).CombinedOutput()
+		if err != nil {
+			t.Fatal("umount", err, string(umountOut))
+		}
+	}
+}
+
+func unmountPartitions(t *testing.T, partitions []*Partition) {
 	for _, partition := range partitions {
 		if partition.FilesystemType == "" || partition.Label == "ROOT" {
 			continue
