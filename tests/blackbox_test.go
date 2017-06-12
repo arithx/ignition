@@ -46,6 +46,63 @@ type Partition struct {
 	Files          []File
 }
 
+type Group struct {
+	name: string
+	gid: int
+	passwordHash: string
+}
+
+type User struct {
+	name: string
+	passwordHash: string
+	sshAuthorizedKeys: []string
+	create: UserOptions
+}
+
+type UserOptions struct {
+	uid: int
+	gecos: string
+	homeDir: string
+	noCreateHome: bool
+	primaryGroup: string
+	groups: []string
+	noUserGroup: bool
+	shell: string
+}
+
+type Passwd struct {
+	users: []User
+	groups: []Group
+}
+
+type Systemd struct {
+	name:     string
+	enable:   bool
+	mask:     bool
+	contents: string
+	dropins:  []File
+}
+
+type Units struct {
+	systemd  []Systemd
+	networkd []File
+	passwd   Passwd
+}
+
+type MntDevice struct {
+	label string
+	code  string
+}
+
+type Test struct {
+	name       string
+	in         []*Partition
+	out        []*Partition
+	mntDevices []MntDevice
+	config     string
+	units      Units
+}
+
 func getBaseDisk() []*Partition {
 	return []*Partition{
 		{
@@ -122,6 +179,126 @@ func getBaseDisk() []*Partition {
 	}
 }
 
+func newTest(name string, in []*Partition, out []*Partition, config string, units Units) {
+	return Test{
+		name: name,
+		in: in,
+		out: out,
+		config: config,
+		units: units,
+	}
+}
+
+func createTests() []Test {
+	tests := []Test{}
+
+	name := "Reformat rootfs to ext4 & drop file in /ignition/test"
+	in := getBaseDisk()
+	out := getBaseDisk()
+	mntDevices := []MntDevice{
+		{
+			label: "EFI-SYSTEM",
+			code: "$DEVICE"
+		}
+	}
+	config := `{
+		"ignition": {"version": "2.0.0"},
+		"storage": {
+			"filesystems": [{
+				"mount": {
+					"device": "$DEVICE",
+					"format": "ext4",
+					"create": {
+						"force": true
+					}},
+				 "name": "test"}],
+			"files": [{
+				"filesystem": "test",
+				"path": "/ignition/test",
+				"contents": {"source": "data:,asdf"}
+			}]}
+	}`
+	units := nil
+
+	in[0].FilesystemType = "ext2"
+	out[0].Files = []File{
+		{
+			Name:     "test",
+			Path:     "ignition",
+			Contents: []string{"asdf"},
+		},
+	}
+
+	append(test, newTest(name, in, out, mntDevices, config, units)
+
+	name = "Create a systemd service"
+	in = getBaseDisk()
+	out = getBaseDisk()
+	mntDevices = nil
+	config = `{
+		"ignition": { "version": "2.0.0" },
+		"systemd": {
+			"units": [{
+				"name": "example.service",
+				"enable": true,
+				"contents": "[Service]\nType=oneshot\nExecStart=/usr/bin/echo Hello World\n\n[Install]\nWantedBy=multi-user.target"
+			}]
+		}
+	}`
+	units = Units{
+		systemd: []Systemd{
+			{
+				name: "example.service",
+				enable: false,
+				mask: false,
+				contents: "[Service]\nType=oneshot\nExecStart=/usr/bin/echo Hello World\n\n[Install]\nWantedBy=multi-user.target"
+				dropins: nil,
+			}
+		},
+		networkd: nil,
+		passwd: nil,
+	}
+
+	append(test, newTest(name, in, out, mntDevices, config, units))
+
+	name = "Modify Services"
+	in = getBaseDisk()
+	out = getBaseDisk()
+	mntDevices = nil
+	config = `{
+	  "ignition": { "version": "2.0.0" },
+	  "systemd": {
+	    "units": [{
+	      "name": "systemd-networkd.service",
+	      "dropins": [{
+	        "name": "debug.conf",
+	        "contents": "[Service]\nEnvironment=SYSTEMD_LOG_LEVEL=debug"
+	      }]
+	    }]
+	  }
+	}`
+	units = Units{
+		systemd: []Systemd{
+			{
+				name: "systemd-networkd.service",
+				enable: false,
+				mask: false,
+				contents: "",
+				dropins: []File{
+					{
+						name: "debug.conf",
+						contents: "[Service]\nEnvironment=SYSTEMD_LOG_LEVEL=debug"
+					}
+				},
+			}
+		},
+		networkd: nil,
+		passwd: nil,
+	}
+
+	append(test, newTest(name, in, out, mntDevices, config, units))
+}
+
 func TestIgnitionBlackBox(t *testing.T) {
 	in1 := getBaseDisk()
 	in1[8].FilesystemType = "ext2"
@@ -161,56 +338,69 @@ func TestIgnitionBlackBox(t *testing.T) {
 	}
 
 	for _, test := range tests {
-		outer(t, test.in, test.out, test.config)
+		outer(t, test)
 	}
 }
 
-func outer(t *testing.T, in []*Partition, out []*Partition, config string) {
+func outer(t *testing.T, test Test) {
 	imgName := "test.img"
-	imageSize := calculateImageSize(in)
+	imageSize := calculateImageSize(test.in)
 
 	// Finish data setup
-	for _, part := range in {
+	for _, part := range test.in {
 		if part.GUID == "" {
 			part.GUID = generateUUID(t)
 		}
 		updateTypeGUID(t, part)
 	}
-	setOffsets(in)
-	for _, part := range out {
+	setOffsets(test.in)
+	for _, part := range test.out {
 		updateTypeGUID(t, part)
 	}
-	setOffsets(out)
+	setOffsets(test.out)
 
 	// Creation
-	createVolume(t, imgName, imageSize, 20, 16, 63, in)
-	setDevices(t, imgName, in)
-	mountPartitions(t, in)
-	createFiles(t, in)
-	dumpDiskInfo(t, imgName, in)
-	unmountPartitions(t, in, imgName)
+	createVolume(t, imgName, imageSize, 20, 16, 63, test.in)
+	setDevices(t, imgName, test.in)
+	mountRootPartition(t, test.in)
+	mountPartitions(t, test.in)
+	createFiles(t, test.in)
+	dumpDiskInfo(t, imgName, test.in)
+	unmountPartitions(t, test.in, imgName)
 
 	// Ignition
-	device := pickDevice(t, in, imgName)
-	t.Log("Loop Device:", device)
-	updateIgnitionConfig(t, config, device)
-	runIgnition(t, "disks")
-	runIgnition(t, "files")
+	for _, d := range test.mntDevices {
+		device := pickDevice(t, test.in, imgName, d.label)
+		updateIgnitionConfig(t, test.config, device, d.code)
+	}
+	root := getRootLocation(t, test.in)
+	runIgnition(t, "disks", root)
+	runIgnition(t, "files", root)
 
 	// Update out structure with mount points & devices
-	setExpectedPartitionsDrive(in, out)
+	setExpectedPartitionsDrive(test.in, test.out)
 
 	// Validation
-	mountPartitions(t, out)
-	dumpDiskInfo(t, imgName, out)
-	validatePartitions(t, out, imgName)
-	validateFiles(t, out)
+	mountPartitions(t, test.out)
+	dumpDiskInfo(t, imgName, test.out)
+	validatePartitions(t, test.out, imgName)
+	validateFiles(t, test.out)
+	validateUnits(t, test.units, root)
 
 	// Cleanup
-	unmountPartitions(t, out, imgName)
-	removeMountFolders(t, out)
+	unmountPartitions(t, test.out, imgName)
+	removeMountFolders(t, test.out)
 	removeFile(t, "config.ign")
 	removeFile(t, imgName)
+}
+
+func getRootLocation(t *testing.T, partitions []*Partition) string {
+	for _, p := range partitions {
+		if p.Label == "ROOT" {
+			return p.MountPath
+		}
+	}
+	t.Fatal("ROOT filesystem not found! A partition labeled ROOT is requred")
 }
 
 func removeFile(t *testing.T, imgName string) {
@@ -229,10 +419,10 @@ func removeMountFolders(t *testing.T, partitions []*Partition) {
 	}
 }
 
-func runIgnition(t *testing.T, stage string) {
+func runIgnition(t *testing.T, stage string, root string) {
 	out, err := exec.Command(
-		"ignition", "-clear-cache", "-oem",
-		"file", "-stage", stage).CombinedOutput()
+		"bin/amd64/ignition", "-clear-cache", "-oem",
+		"file", "-stage", stage, "-root", root).CombinedOutput()
 	debugInfo, derr := ioutil.ReadFile("/var/log/syslog")
 	if derr == nil {
 		debugOut := []string{}
@@ -250,15 +440,15 @@ func runIgnition(t *testing.T, stage string) {
 
 }
 
-func pickDevice(t *testing.T, partitions []*Partition, fileName string) string {
+func pickDevice(t *testing.T, partitions []*Partition, fileName string, label string) string {
 	number := -1
 	for _, p := range partitions {
-		if p.Label == "ROOT" {
+		if p.Label == label {
 			number = p.Number
 		}
 	}
 	if number == -1 {
-		t.Fatal("Didn't find a ROOT drive")
+		t.Fatal("Didn't find a drive with label:", label)
 		return ""
 	}
 
@@ -271,10 +461,10 @@ func pickDevice(t *testing.T, partitions []*Partition, fileName string) string {
 		strings.Trim(strings.Split(string(kpartxOut), " ")[4], "/dev/"), number)
 }
 
-func updateIgnitionConfig(t *testing.T, config, device string) {
+func updateIgnitionConfig(t *testing.T, config, device string, code string) {
 	err := ioutil.WriteFile(
 		"config.ign", []byte(strings.Replace(
-			config, "$DEVICE", device, -1)), 0644)
+			config, code, device, -1)), 0644)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -341,10 +531,9 @@ func createVolume(
 			continue
 		}
 
-		mntPath := fmt.Sprintf("%s%s%d", "/mnt/", "hd1p", counter)
-		err := os.Mkdir(mntPath, 0644)
+		mntPath, err := ioutil.TempDir("", fmt.Sprintf("%s%d", "hd1p", counter))
 		if err != nil {
-			t.Fatal("mkdir", err)
+			t.Fatal(err)
 		}
 		partition.MountPath = mntPath
 	}
@@ -503,9 +692,25 @@ func kpartxAdd(t *testing.T, fileName string) string {
 	return strings.Trim(strings.Split(string(kpartxOut), " ")[4], "/dev/")
 }
 
+func mountRootPartition(t *testing.T, partitions []*Partition) {
+	for _, partition := range partitions {
+		if partition.Label != "ROOT" {
+			continue
+		}
+		mountOut, err := exec.Command(
+			"/bin/mount", partition.Device,
+			partition.MountPath).CombinedOutput()
+		if err != nil {
+			t.Fatal("mount", err, string(mountOut))
+		}
+		return
+	}
+	t.Fatal("Didn't find the ROOT partition to mount")
+}
+
 func mountPartitions(t *testing.T, partitions []*Partition) {
 	for _, partition := range partitions {
-		if partition.FilesystemType == "" {
+		if partition.FilesystemType == "" || partition.Label == "ROOT" {
 			continue
 		}
 		mountOut, err := exec.Command(
@@ -596,7 +801,7 @@ func createFiles(t *testing.T, partitions []*Partition) {
 
 func unmountPartitions(t *testing.T, partitions []*Partition, fileName string) {
 	for _, partition := range partitions {
-		if partition.FilesystemType == "" {
+		if partition.FilesystemType == "" || partition.Label == "ROOT" {
 			continue
 		}
 		umountOut, err := exec.Command(
@@ -689,14 +894,197 @@ func validateFiles(t *testing.T, expected []*Partition) {
 				expectedContents := strings.Join(file.Contents, "\n")
 				dat, err := ioutil.ReadFile(path)
 				if err != nil {
-					t.Fatal("Error when reading file ", path)
+					t.Fatal("Error when reading file", path)
 				}
 
 				actualContents := string(dat)
 				if expectedContents != actualContents {
-					t.Fatal("Contents of file ", path, "do not match!",
+					t.Fatal("Contents of file", path, "do not match!",
 						expectedContents, actualContents)
 				}
+			}
+		}
+	}
+}
+
+
+
+// Needs to be redone as just files
+func validateUnits(t *testing.T, expected Units, root string) {
+	validateSystemd(t, expected.systemd, root)
+	validateNetworkd(t, expected.networkd, root)
+	validatePasswd(t, expected.passwd, root)
+}
+
+func validatePasswd(t *testing.T, expected Passwd, root string) {
+	for _, user := range expected.users {
+		passwdOut, err := ioutil.ReadFile(strings.Join(
+			[]string{root, "etc/passwd"}, "/"))
+		if err != nil {
+			t.Fatal(err)
+		}
+		lines := strings.Split(string(passwdOut), "\n")
+		found := false
+		for _, line := range lines {
+			if string.HasPrefix(line, user.name) {
+				found = true
+				data := strings.Split(line, ":")
+
+				if user.passwordHash && !user.passwordHash == data[1] {
+					t.Fatal(user.name, "password hash doesn't match", user.passwordHash, data[1])
+				}
+
+				if user.create.uid != -1 && user.create.uid != data[2] {
+					t.Fatal(user.name, "UID doesn't match", user.create.uid, data[2])
+				}
+
+				if user.create.gecos != "" && user.create.gecos != data[4] {
+					t.Fatal(user.name, "GECOS doesn't match", user.create.gecos, data[4])
+				}
+
+				if user.create.noCreateHome && "" != data[5] {
+					t.Fatal(user.name, "has a homeDir with noCreateHome enabled", data[5])
+				} else if user.create.homeDir != "" && user.create.homeDir != data[5] {
+					t.Fatal(user.name, "homeDir doesn't match", user.create.homeDir, data[5])
+				}
+
+				if user.create.noUserGroup && data[3] != "" {
+					t.Fatal(user.name, "has a Group with noUserGroup enabled")
+				} else if user.create.primaryGroup != "" && user.create.primaryGroup != data[3] {
+					t.Fatal(user.name, "primaryGroup doesn't match", user.create.primaryGroup, data[3])
+				}
+
+				groupsOut, err := exec.Command(
+					"groups", user.name).CombinedOutput()
+				if err != nil {
+					t.Fatal(err)
+				}
+				for _, g := range user.create.groups {
+					if !string.Contains(groupsOut, g) {
+						t.Fatal(user.name, "does not have the right groups",
+						"expected:", strings.Join(user.create.groups, " "),
+						"actual", groupsOut)
+					}
+				}
+
+				sshkeys, err := ioutil.ReadFile(
+					fmt.Sprintf("~%s/.ssh/authorized_keys", user.name))
+				sshAuthorizedKeysOut := string(sshkeys)
+				if err != nil {
+					t.Fatal(err)
+				}
+				for _, key := user.sshAuthorizedKeys {
+					if !string.Contains(sshAuthorizedKeysOut, key) {
+						t.Fatal(user.name, "SSH Authorized Key is missing", key)
+					}
+				}
+			}
+		}
+
+		if !found {
+			t.Fatal("Didn't find user" passwd.name)
+		}
+	}
+
+	gout, err := ioutil.ReadFile(strings.Join([]string{root, "etc/group"}, "/"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	lines := strings.Split(string(gout), "\n")
+	for _, group := expected.groups {
+		found := false
+		for _, line := range lines {
+			data := strings.Split(line, ":")
+			if group.name == data[0] {
+				found = true
+				if group.passwordHash != data[1] {
+					t.Fatal(group.name, "password hash doesn't match", group.passwordHash, data[1])
+				}
+
+				if group.gid != data[2] {
+					t.Fatal(group.name, "gid doesn't match", group.gid, data[2])
+				}
+			}
+		}
+		if !found {
+			t.Fatal("Didn't find group", group.name)
+		}
+	}
+}
+
+func validateNetworkd(t *testing.T, expected []File, root string) {
+	for _, networkd := range expected {
+		path := strings.Join([]string{
+			root, "run/systemd/network", networkd.Name}, "/")
+		ac, err := ioutil.ReadFile(path)
+		actualContents := string(ac)
+		if err != nil {
+			t.Fatal(err)
+		}
+		if actualContents != networkd.Contents {
+			t.Fatal("contents of file", path, "do not match!",
+				networkd.Contents, actualContents)
+		}
+	}
+}
+
+func validateSystemd(t *testing.T, expected []Systemd, root string) {
+	for _, systemd := range expected {
+		pOut, err := ioutil.ReadFile(strings.Join(
+			[]string{root, "etc/systemd/system-preset/020-ignition.preset"}, "/"))
+		presetOut := string(pOut)
+		if err != nil {
+			t.Fatal(err)
+		}
+
+		if systemd.enable && !strings.Contains(presetOut, fmt.Sprintf("enable %s", systemd.name)) {
+			t.Fatal(systemd.name, "was not marked enabled")
+		}
+
+		if systemd.mask {
+			fi, err := os.Lstat(strings.Join([]string{
+				root, "etc/systemd/system", systemd.name}, "/"))
+			if err != nil {
+				t.Fatal(err)
+			}
+			if fi.Mode() & os.ModeSymlink != 0 {
+				t.Fatal(systemd.name, "was not masked")
+			}
+			link, err := os.Readlink(strings.Join([]string{
+				root, "etc/systemd/system", systemd.name}, "/"))
+			if err != nil {
+				t.Fatal(err)
+			}
+			if link != "/dev/null" {
+				t.Fatal(systemd.name, "was symlinked somewhere other than /dev/null")
+			}
+		}
+
+		if systemd.contents != "" {
+			path := strings.Join([]string{
+				root, "etc/systemd/system", systemd.name}, "/")
+			ac, err := ioutil.ReadFile(path)
+			actualContents := string(ac)
+			if err != nil {
+				t.Fatal(err)
+			}
+			if actualContents != systemd.contents {
+				t.fatal("contents of file", path, "do not match!",
+					systemd.contents, actualContents)
+			}
+		}
+
+		for _, file := range systemd.dropins {
+			path := strings.Join([]string{
+				root, "etc/systemd/system", systemd.name, file.name}, "/")
+			ac, err := ioutil.ReadFile(path)
+			actualContents := string(ac)
+			if err != nil {
+				t.Fatal(err)
+			}
+			if actualContents != file.Contents {
+				t.fatal("contents of file", path, "do not match!",
+					file.Contents, actualContents)
 			}
 		}
 	}
