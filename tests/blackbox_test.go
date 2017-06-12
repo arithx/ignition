@@ -46,49 +46,6 @@ type Partition struct {
 	Files          []File
 }
 
-type Group struct {
-	name         string
-	gid          int
-	passwordHash string
-}
-
-type User struct {
-	name              string
-	passwordHash      string
-	sshAuthorizedKeys []string
-	create            UserOptions
-}
-
-type UserOptions struct {
-	uid          int
-	gecos        string
-	homeDir      string
-	noCreateHome bool
-	primaryGroup string
-	groups       []string
-	noUserGroup  bool
-	shell        string
-}
-
-type Passwd struct {
-	users  []User
-	groups []Group
-}
-
-type Systemd struct {
-	name     string
-	enable   bool
-	mask     bool
-	contents string
-	dropins  []File
-}
-
-type Units struct {
-	systemd  []Systemd
-	networkd []File
-	passwd   Passwd
-}
-
 type MntDevice struct {
 	label string
 	code  string
@@ -179,14 +136,13 @@ func getBaseDisk() []*Partition {
 	}
 }
 
-func newTest(name string, in []*Partition, out []*Partition, mntDevices []MntDevice, config string, units Units) Test {
+func newTest(name string, in []*Partition, out []*Partition, mntDevices []MntDevice, config string) Test {
 	return Test{
 		name:       name,
 		in:         in,
 		out:        out,
 		mntDevices: mntDevices,
 		config:     config,
-		units:      units,
 	}
 }
 
@@ -219,11 +175,6 @@ func createTests() []Test {
 				"contents": {"source": "data:,asdf"}
 			}]}
 	}`
-	units := Units{
-		systemd:  []Systemd{},
-		networkd: []File{},
-		passwd:   Passwd{},
-	}
 
 	in[0].FilesystemType = "ext2"
 	out[0].Files = []File{
@@ -234,7 +185,7 @@ func createTests() []Test {
 		},
 	}
 
-	tests = append(tests, newTest(name, in, out, mntDevices, config, units))
+	tests = append(tests, newTest(name, in, out, mntDevices, config))
 
 	name = "Create a systemd service"
 	in = getBaseDisk()
@@ -250,21 +201,20 @@ func createTests() []Test {
 			}]
 		}
 	}`
-	units = Units{
-		systemd: []Systemd{
-			{
-				name:     "example.service",
-				enable:   false,
-				mask:     false,
-				contents: "[Service]\nType=oneshot\nExecStart=/usr/bin/echo Hello World\n\n[Install]\nWantedBy=multi-user.target",
-				dropins:  nil,
-			},
+	out[8].Files = []File{
+		{
+			Name:		"example.service",
+			Path:		"etc/systemd/system",
+			Contents:	"[Service]\nType=oneshot\nExecStart=/usr/bin/echo Hello World\n\n[Install]\nWantedBy=multi-user.target",
 		},
-		networkd: []File{},
-		passwd:   Passwd{},
+		{
+			Name:		"020-ignition.preset",
+			Path:		"etc/systemd/system-preset",
+			Contents:	"enable example.service",
+		}
 	}
 
-	tests = append(tests, newTest(name, in, out, mntDevices, config, units))
+	tests = append(tests, newTest(name, in, out, mntDevices, config))
 
 	name = "Modify Services"
 	in = getBaseDisk()
@@ -282,26 +232,15 @@ func createTests() []Test {
 	    }]
 	  }
 	}`
-	units = Units{
-		systemd: []Systemd{
-			{
-				name:     "systemd-networkd.service",
-				enable:   false,
-				mask:     false,
-				contents: "",
-				dropins: []File{
-					{
-						Name:     "debug.conf",
-						Contents: []string{"[Service]\nEnvironment=SYSTEMD_LOG_LEVEL=debug"},
-					},
-				},
-			},
-		},
-		networkd: []File{},
-		passwd:   Passwd{},
+	out[8].Files = []File{
+		{
+			Name:		"debug.conf",
+			Path:		"run/systemd/network",
+			Contents:	"[Service]\nEnvironment=SYSTEMD_LOG_LEVEL=debug",
+		}
 	}
 
-	tests = append(tests, newTest(name, in, out, mntDevices, config, units))
+	tests = append(tests, newTest(name, in, out, mntDevices, config))
 
 	return tests
 }
@@ -873,188 +812,6 @@ func validateFiles(t *testing.T, expected []*Partition) {
 					t.Fatal("Contents of file", path, "do not match!",
 						expectedContents, actualContents)
 				}
-			}
-		}
-	}
-}
-
-// Needs to be redone as just files
-func validateUnits(t *testing.T, expected Units, root string) {
-	validateSystemd(t, expected.systemd, root)
-	validateNetworkd(t, expected.networkd, root)
-	validatePasswd(t, expected.passwd, root)
-}
-
-func validatePasswd(t *testing.T, expected Passwd, root string) {
-	for _, user := range expected.users {
-		passwdOut, err := ioutil.ReadFile(strings.Join(
-			[]string{root, "etc/passwd"}, "/"))
-		if err != nil {
-			t.Fatal(err)
-		}
-		lines := strings.Split(string(passwdOut), "\n")
-		found := false
-		for _, line := range lines {
-			if strings.HasPrefix(line, user.name) {
-				found = true
-				data := strings.Split(line, ":")
-
-				if user.passwordHash != "" && user.passwordHash != data[1] {
-					t.Fatal(user.name, "password hash doesn't match", user.passwordHash, data[1])
-				}
-
-				if user.create.uid != -1 && string(user.create.uid) != data[2] {
-					t.Fatal(user.name, "UID doesn't match", user.create.uid, data[2])
-				}
-
-				if user.create.gecos != "" && user.create.gecos != data[4] {
-					t.Fatal(user.name, "GECOS doesn't match", user.create.gecos, data[4])
-				}
-
-				if user.create.noCreateHome && "" != data[5] {
-					t.Fatal(user.name, "has a homeDir with noCreateHome enabled", data[5])
-				} else if user.create.homeDir != "" && user.create.homeDir != data[5] {
-					t.Fatal(user.name, "homeDir doesn't match", user.create.homeDir, data[5])
-				}
-
-				if user.create.noUserGroup && data[3] != "" {
-					t.Fatal(user.name, "has a Group with noUserGroup enabled")
-				} else if user.create.primaryGroup != "" && user.create.primaryGroup != data[3] {
-					t.Fatal(user.name, "primaryGroup doesn't match", user.create.primaryGroup, data[3])
-				}
-
-				gout, err := exec.Command(
-					"groups", user.name).CombinedOutput()
-				groupsOut := string(gout)
-				if err != nil {
-					t.Fatal(err)
-				}
-				for _, g := range user.create.groups {
-					if !strings.Contains(groupsOut, g) {
-						t.Fatal(user.name, "does not have the right groups",
-							"expected:", strings.Join(user.create.groups, " "),
-							"actual", groupsOut)
-					}
-				}
-
-				sshkeys, err := ioutil.ReadFile(
-					fmt.Sprintf("~%s/.ssh/authorized_keys", user.name))
-				sshAuthorizedKeysOut := string(sshkeys)
-				if err != nil {
-					t.Fatal(err)
-				}
-				for _, key := range user.sshAuthorizedKeys {
-					if !strings.Contains(sshAuthorizedKeysOut, key) {
-						t.Fatal(user.name, "SSH Authorized Key is missing", key)
-					}
-				}
-			}
-		}
-
-		if !found {
-			t.Fatal("Didn't find user", user.name)
-		}
-	}
-
-	gout, err := ioutil.ReadFile(strings.Join([]string{root, "etc/group"}, "/"))
-	if err != nil {
-		t.Fatal(err)
-	}
-	lines := strings.Split(string(gout), "\n")
-	for _, group := range expected.groups {
-		found := false
-		for _, line := range lines {
-			data := strings.Split(line, ":")
-			if group.name == data[0] {
-				found = true
-				if group.passwordHash != data[1] {
-					t.Fatal(group.name, "password hash doesn't match", group.passwordHash, data[1])
-				}
-
-				if string(group.gid) != data[2] {
-					t.Fatal(group.name, "gid doesn't match", group.gid, data[2])
-				}
-			}
-		}
-		if !found {
-			t.Fatal("Didn't find group", group.name)
-		}
-	}
-}
-
-func validateNetworkd(t *testing.T, expected []File, root string) {
-	for _, networkd := range expected {
-		path := strings.Join([]string{
-			root, "run/systemd/network", networkd.Name}, "/")
-		ac, err := ioutil.ReadFile(path)
-		actualContents := string(ac)
-		if err != nil {
-			t.Fatal(err)
-		}
-		if actualContents != strings.Join(networkd.Contents, "\n") {
-			t.Fatal("contents of file", path, "do not match!",
-				networkd.Contents, actualContents)
-		}
-	}
-}
-
-func validateSystemd(t *testing.T, expected []Systemd, root string) {
-	for _, systemd := range expected {
-		pOut, err := ioutil.ReadFile(strings.Join(
-			[]string{root, "etc/systemd/system-preset/020-ignition.preset"}, "/"))
-		presetOut := string(pOut)
-		if err != nil {
-			t.Fatal(err)
-		}
-
-		if systemd.enable && !strings.Contains(presetOut, fmt.Sprintf("enable %s", systemd.name)) {
-			t.Fatal(systemd.name, "was not marked enabled")
-		}
-
-		if systemd.mask {
-			fi, err := os.Lstat(strings.Join([]string{
-				root, "etc/systemd/system", systemd.name}, "/"))
-			if err != nil {
-				t.Fatal(err)
-			}
-			if fi.Mode()&os.ModeSymlink != 0 {
-				t.Fatal(systemd.name, "was not masked")
-			}
-			link, err := os.Readlink(strings.Join([]string{
-				root, "etc/systemd/system", systemd.name}, "/"))
-			if err != nil {
-				t.Fatal(err)
-			}
-			if link != "/dev/null" {
-				t.Fatal(systemd.name, "was symlinked somewhere other than /dev/null")
-			}
-		}
-
-		if systemd.contents != "" {
-			path := strings.Join([]string{
-				root, "etc/systemd/system", systemd.name}, "/")
-			ac, err := ioutil.ReadFile(path)
-			actualContents := string(ac)
-			if err != nil {
-				t.Fatal(err)
-			}
-			if actualContents != systemd.contents {
-				t.Fatal("contents of file", path, "do not match!",
-					systemd.contents, actualContents)
-			}
-		}
-
-		for _, file := range systemd.dropins {
-			path := strings.Join([]string{
-				root, "etc/systemd/system", systemd.name, file.Name}, "/")
-			ac, err := ioutil.ReadFile(path)
-			actualContents := string(ac)
-			if err != nil {
-				t.Fatal(err)
-			}
-			if actualContents != strings.Join(file.Contents, "\n") {
-				t.Fatal("contents of file", path, "do not match!",
-					file.Contents, actualContents)
 			}
 		}
 	}
