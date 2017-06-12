@@ -47,40 +47,40 @@ type Partition struct {
 }
 
 type Group struct {
-	name: string
-	gid: int
-	passwordHash: string
+	name         string
+	gid          int
+	passwordHash string
 }
 
 type User struct {
-	name: string
-	passwordHash: string
-	sshAuthorizedKeys: []string
-	create: UserOptions
+	name              string
+	passwordHash      string
+	sshAuthorizedKeys []string
+	create            UserOptions
 }
 
 type UserOptions struct {
-	uid: int
-	gecos: string
-	homeDir: string
-	noCreateHome: bool
-	primaryGroup: string
-	groups: []string
-	noUserGroup: bool
-	shell: string
+	uid          int
+	gecos        string
+	homeDir      string
+	noCreateHome bool
+	primaryGroup string
+	groups       []string
+	noUserGroup  bool
+	shell        string
 }
 
 type Passwd struct {
-	users: []User
-	groups: []Group
+	users  []User
+	groups []Group
 }
 
 type Systemd struct {
-	name:     string
-	enable:   bool
-	mask:     bool
-	contents: string
-	dropins:  []File
+	name     string
+	enable   bool
+	mask     bool
+	contents string
+	dropins  []File
 }
 
 type Units struct {
@@ -179,13 +179,14 @@ func getBaseDisk() []*Partition {
 	}
 }
 
-func newTest(name string, in []*Partition, out []*Partition, config string, units Units) {
+func newTest(name string, in []*Partition, out []*Partition, mntDevices []MntDevice, config string, units Units) Test {
 	return Test{
-		name: name,
-		in: in,
-		out: out,
-		config: config,
-		units: units,
+		name:       name,
+		in:         in,
+		out:        out,
+		mntDevices: mntDevices,
+		config:     config,
+		units:      units,
 	}
 }
 
@@ -198,8 +199,8 @@ func createTests() []Test {
 	mntDevices := []MntDevice{
 		{
 			label: "EFI-SYSTEM",
-			code: "$DEVICE"
-		}
+			code:  "$DEVICE",
+		},
 	}
 	config := `{
 		"ignition": {"version": "2.0.0"},
@@ -218,7 +219,11 @@ func createTests() []Test {
 				"contents": {"source": "data:,asdf"}
 			}]}
 	}`
-	units := nil
+	units := Units{
+		systemd:  []Systemd{},
+		networkd: []File{},
+		passwd:   Passwd{},
+	}
 
 	in[0].FilesystemType = "ext2"
 	out[0].Files = []File{
@@ -229,7 +234,7 @@ func createTests() []Test {
 		},
 	}
 
-	append(test, newTest(name, in, out, mntDevices, config, units)
+	tests = append(tests, newTest(name, in, out, mntDevices, config, units))
 
 	name = "Create a systemd service"
 	in = getBaseDisk()
@@ -248,18 +253,18 @@ func createTests() []Test {
 	units = Units{
 		systemd: []Systemd{
 			{
-				name: "example.service",
-				enable: false,
-				mask: false,
-				contents: "[Service]\nType=oneshot\nExecStart=/usr/bin/echo Hello World\n\n[Install]\nWantedBy=multi-user.target"
-				dropins: nil,
-			}
+				name:     "example.service",
+				enable:   false,
+				mask:     false,
+				contents: "[Service]\nType=oneshot\nExecStart=/usr/bin/echo Hello World\n\n[Install]\nWantedBy=multi-user.target",
+				dropins:  nil,
+			},
 		},
-		networkd: nil,
-		passwd: nil,
+		networkd: []File{},
+		passwd:   Passwd{},
 	}
 
-	append(test, newTest(name, in, out, mntDevices, config, units))
+	tests = append(tests, newTest(name, in, out, mntDevices, config, units))
 
 	name = "Modify Services"
 	in = getBaseDisk()
@@ -280,64 +285,29 @@ func createTests() []Test {
 	units = Units{
 		systemd: []Systemd{
 			{
-				name: "systemd-networkd.service",
-				enable: false,
-				mask: false,
+				name:     "systemd-networkd.service",
+				enable:   false,
+				mask:     false,
 				contents: "",
 				dropins: []File{
 					{
-						name: "debug.conf",
-						contents: "[Service]\nEnvironment=SYSTEMD_LOG_LEVEL=debug"
-					}
+						Name:     "debug.conf",
+						Contents: []string{"[Service]\nEnvironment=SYSTEMD_LOG_LEVEL=debug"},
+					},
 				},
-			}
+			},
 		},
-		networkd: nil,
-		passwd: nil,
+		networkd: []File{},
+		passwd:   Passwd{},
 	}
 
-	append(test, newTest(name, in, out, mntDevices, config, units))
+	tests = append(tests, newTest(name, in, out, mntDevices, config, units))
+
+	return tests
 }
 
 func TestIgnitionBlackBox(t *testing.T) {
-	in1 := getBaseDisk()
-	in1[8].FilesystemType = "ext2"
-	out1 := getBaseDisk()
-	out1[8].Files = []File{
-		{
-			Name:     "test",
-			Path:     "ignition",
-			Contents: []string{"asdf"},
-		},
-	}
-	tests := []struct {
-		in, out []*Partition
-		config  string
-	}{
-		{
-			in:  in1,
-			out: out1,
-			config: `{
-			    "ignition": {"version": "2.0.0"},
-			    "storage": {
-			        "filesystems": [{
-			            "mount": {
-			                "device": "$DEVICE",
-			                "format": "ext4",
-			                "create": {
-			                    "force": true
-			                }},
-			             "name": "test"}],
-			        "files": [{
-			            "filesystem": "test",
-			            "path": "/ignition/test",
-			            "contents": {"source": "data:,asdf"}
-			        }]}
-			}`,
-		},
-	}
-
-	for _, test := range tests {
+	for _, test := range createTests() {
 		outer(t, test)
 	}
 }
@@ -401,6 +371,7 @@ func getRootLocation(t *testing.T, partitions []*Partition) string {
 		}
 	}
 	t.Fatal("ROOT filesystem not found! A partition labeled ROOT is requred")
+	return ""
 }
 
 func removeFile(t *testing.T, imgName string) {
@@ -907,8 +878,6 @@ func validateFiles(t *testing.T, expected []*Partition) {
 	}
 }
 
-
-
 // Needs to be redone as just files
 func validateUnits(t *testing.T, expected Units, root string) {
 	validateSystemd(t, expected.systemd, root)
@@ -926,15 +895,15 @@ func validatePasswd(t *testing.T, expected Passwd, root string) {
 		lines := strings.Split(string(passwdOut), "\n")
 		found := false
 		for _, line := range lines {
-			if string.HasPrefix(line, user.name) {
+			if strings.HasPrefix(line, user.name) {
 				found = true
 				data := strings.Split(line, ":")
 
-				if user.passwordHash && !user.passwordHash == data[1] {
+				if user.passwordHash != "" && user.passwordHash != data[1] {
 					t.Fatal(user.name, "password hash doesn't match", user.passwordHash, data[1])
 				}
 
-				if user.create.uid != -1 && user.create.uid != data[2] {
+				if user.create.uid != -1 && string(user.create.uid) != data[2] {
 					t.Fatal(user.name, "UID doesn't match", user.create.uid, data[2])
 				}
 
@@ -954,16 +923,17 @@ func validatePasswd(t *testing.T, expected Passwd, root string) {
 					t.Fatal(user.name, "primaryGroup doesn't match", user.create.primaryGroup, data[3])
 				}
 
-				groupsOut, err := exec.Command(
+				gout, err := exec.Command(
 					"groups", user.name).CombinedOutput()
+				groupsOut := string(gout)
 				if err != nil {
 					t.Fatal(err)
 				}
 				for _, g := range user.create.groups {
-					if !string.Contains(groupsOut, g) {
+					if !strings.Contains(groupsOut, g) {
 						t.Fatal(user.name, "does not have the right groups",
-						"expected:", strings.Join(user.create.groups, " "),
-						"actual", groupsOut)
+							"expected:", strings.Join(user.create.groups, " "),
+							"actual", groupsOut)
 					}
 				}
 
@@ -973,8 +943,8 @@ func validatePasswd(t *testing.T, expected Passwd, root string) {
 				if err != nil {
 					t.Fatal(err)
 				}
-				for _, key := user.sshAuthorizedKeys {
-					if !string.Contains(sshAuthorizedKeysOut, key) {
+				for _, key := range user.sshAuthorizedKeys {
+					if !strings.Contains(sshAuthorizedKeysOut, key) {
 						t.Fatal(user.name, "SSH Authorized Key is missing", key)
 					}
 				}
@@ -982,7 +952,7 @@ func validatePasswd(t *testing.T, expected Passwd, root string) {
 		}
 
 		if !found {
-			t.Fatal("Didn't find user" passwd.name)
+			t.Fatal("Didn't find user", user.name)
 		}
 	}
 
@@ -991,7 +961,7 @@ func validatePasswd(t *testing.T, expected Passwd, root string) {
 		t.Fatal(err)
 	}
 	lines := strings.Split(string(gout), "\n")
-	for _, group := expected.groups {
+	for _, group := range expected.groups {
 		found := false
 		for _, line := range lines {
 			data := strings.Split(line, ":")
@@ -1001,7 +971,7 @@ func validatePasswd(t *testing.T, expected Passwd, root string) {
 					t.Fatal(group.name, "password hash doesn't match", group.passwordHash, data[1])
 				}
 
-				if group.gid != data[2] {
+				if string(group.gid) != data[2] {
 					t.Fatal(group.name, "gid doesn't match", group.gid, data[2])
 				}
 			}
@@ -1021,7 +991,7 @@ func validateNetworkd(t *testing.T, expected []File, root string) {
 		if err != nil {
 			t.Fatal(err)
 		}
-		if actualContents != networkd.Contents {
+		if actualContents != strings.Join(networkd.Contents, "\n") {
 			t.Fatal("contents of file", path, "do not match!",
 				networkd.Contents, actualContents)
 		}
@@ -1047,7 +1017,7 @@ func validateSystemd(t *testing.T, expected []Systemd, root string) {
 			if err != nil {
 				t.Fatal(err)
 			}
-			if fi.Mode() & os.ModeSymlink != 0 {
+			if fi.Mode()&os.ModeSymlink != 0 {
 				t.Fatal(systemd.name, "was not masked")
 			}
 			link, err := os.Readlink(strings.Join([]string{
@@ -1069,21 +1039,21 @@ func validateSystemd(t *testing.T, expected []Systemd, root string) {
 				t.Fatal(err)
 			}
 			if actualContents != systemd.contents {
-				t.fatal("contents of file", path, "do not match!",
+				t.Fatal("contents of file", path, "do not match!",
 					systemd.contents, actualContents)
 			}
 		}
 
 		for _, file := range systemd.dropins {
 			path := strings.Join([]string{
-				root, "etc/systemd/system", systemd.name, file.name}, "/")
+				root, "etc/systemd/system", systemd.name, file.Name}, "/")
 			ac, err := ioutil.ReadFile(path)
 			actualContents := string(ac)
 			if err != nil {
 				t.Fatal(err)
 			}
-			if actualContents != file.Contents {
-				t.fatal("contents of file", path, "do not match!",
+			if actualContents != strings.Join(file.Contents, "\n") {
+				t.Fatal("contents of file", path, "do not match!",
 					file.Contents, actualContents)
 			}
 		}
