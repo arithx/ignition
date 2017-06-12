@@ -31,7 +31,7 @@ echo "Checking govet..."
 go vet $PKG_VET
 
 echo "Running tests..."
-if [ "$ACTION" != "COMPILE" ]; then
+if [ "${ACTION:-TEST}" != "COMPILE" ]; then
 	go test -timeout 60s -run -cover $@ ${PKG} --race
 else
 	for p in ${PKG}; do
