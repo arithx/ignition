@@ -29,6 +29,7 @@ type File struct {
 	Name     string
 	Path     string
 	Contents []string
+	Mode     string
 }
 
 type Partition struct {
@@ -57,7 +58,6 @@ type Test struct {
 	out        []*Partition
 	mntDevices []MntDevice
 	config     string
-	units      Units
 }
 
 func getBaseDisk() []*Partition {
@@ -67,7 +67,7 @@ func getBaseDisk() []*Partition {
 			Label:          "EFI-SYSTEM",
 			TypeCode:       "efi",
 			Length:         262144,
-			FilesystemType: "ext2",
+			FilesystemType: "ext4",
 			Hybrid:         true,
 			Files: []File{
 				{
@@ -203,15 +203,15 @@ func createTests() []Test {
 	}`
 	out[8].Files = []File{
 		{
-			Name:		"example.service",
-			Path:		"etc/systemd/system",
-			Contents:	"[Service]\nType=oneshot\nExecStart=/usr/bin/echo Hello World\n\n[Install]\nWantedBy=multi-user.target",
+			Name:     "example.service",
+			Path:     "etc/systemd/system",
+			Contents: []string{"[Service]\nType=oneshot\nExecStart=/usr/bin/echo Hello World\n\n[Install]\nWantedBy=multi-user.target"},
 		},
 		{
-			Name:		"020-ignition.preset",
-			Path:		"etc/systemd/system-preset",
-			Contents:	"enable example.service",
-		}
+			Name:     "20-ignition.preset",
+			Path:     "etc/systemd/system-preset",
+			Contents: []string{"enable example.service",""},
+		},
 	}
 
 	tests = append(tests, newTest(name, in, out, mntDevices, config))
@@ -234,24 +234,215 @@ func createTests() []Test {
 	}`
 	out[8].Files = []File{
 		{
-			Name:		"debug.conf",
-			Path:		"run/systemd/network",
-			Contents:	"[Service]\nEnvironment=SYSTEMD_LOG_LEVEL=debug",
-		}
+			Name:     "debug.conf",
+			Path:     "etc/systemd/system/systemd-networkd.service.d",
+			Contents: []string{"[Service]\nEnvironment=SYSTEMD_LOG_LEVEL=debug"},
+		},
 	}
 
 	tests = append(tests, newTest(name, in, out, mntDevices, config))
+
+	name = "Reformat a Filesystem to Btrfs"
+	in = getBaseDisk()
+	out = getBaseDisk()
+	mntDevices = []MntDevice{
+		{
+			label: "OEM",
+			code:  "$DEVICE",
+		},
+	}
+	config = `{
+	  "ignition": { "version": "2.0.0" },
+	  "storage": {
+	    "filesystems": [{
+	      "mount": {
+	        "device": "$DEVICE",
+	        "format": "btrfs",
+	        "create": {
+	          "force": true,
+	          "options": [ "--label=OEM" ]
+	        }
+	      }
+	    }]
+	  }
+	}`
+	out[5].FilesystemType = "btrfs"
+
+	tests = append(tests, newTest(name, in, out, mntDevices, config))
+
+	name = "Reformat a Filesystem to XFS"
+	in = getBaseDisk()
+	out = getBaseDisk()
+	mntDevices = []MntDevice{
+		{
+			label: "OEM",
+			code:  "$DEVICE",
+		},
+	}
+	config = `{
+	  "ignition": { "version": "2.0.0" },
+	  "storage": {
+	    "filesystems": [{
+	      "mount": {
+	        "device": "$DEVICE",
+	        "format": "xfs",
+	        "create": {
+	          "force": true,
+	          "options": [ "-L", "OEM" ]
+	        }
+	      }
+	    }]
+	  }
+	}`
+	out[5].FilesystemType = "xfs"
+
+	tests = append(tests, newTest(name, in, out, mntDevices, config))
+
+	name = "Create Files on the Root Filesystem"
+	in = getBaseDisk()
+	out = getBaseDisk()
+	mntDevices = nil
+	config = `{
+	  "ignition": { "version": "2.0.0" },
+	  "storage": {
+	    "files": [{
+	      "filesystem": "root",
+	      "path": "/foo/bar",
+	      "contents": { "source": "data:,example%20file%0A" }
+	    }]
+	  }
+	}`
+	out[8].Files = []File{
+		{
+			Name:     "bar",
+			Path:     "foo",
+			Contents: []string{"example file\n"},
+		},
+	}
+
+	tests = append(tests, newTest(name, in, out, mntDevices, config))
+
+	name = "Create Files from Remote Contents"
+	in = getBaseDisk()
+	out = getBaseDisk()
+	mntDevices = nil
+	config = `{
+	  "ignition": { "version": "2.0.0" },
+	  "storage": {
+	    "files": [{
+	      "filesystem": "root",
+	      "path": "/foo/bar",
+	      "contents": {
+	        "source": "https://gist.githubusercontent.com/arithx/af92c8a97c6ade777ea741047b18e815/raw/02fd7082ee25036c519d1caab9cf74ebc782b189/gistfile1.txt",
+	        "verification": { "hash": "sha512-1a04c76c17079cd99e688ba4f1ba095b927d3fecf2b1e027af361dfeafb548f7f5f6fdd675aaa2563950db441d893ca77b0c3e965cdcb891784af96e330267d7" }
+	      }
+	    }]
+	  }
+	}`
+	out[8].Files = []File{
+		{
+			Name:     "bar",
+			Path:     "foo",
+			Contents: []string{"asdf\nfdsa"},
+		},
+	}
+
+	tests = append(tests, newTest(name, in, out, mntDevices, config))
+
+	name = "Replacing the Config with a Remote Config"
+	in = getBaseDisk()
+	out = getBaseDisk()
+	mntDevices = nil
+	config = `{
+	  "ignition": {
+	    "version": "2.0.0",
+	    "config": {
+	      "replace": {
+	        "source": "https://gist.githubusercontent.com/arithx/fd9fad926b01a35a57ac5c0cc77d2bf7/raw/56bacc7d24fc08aa7303d5eca57c3e3ad9074c32/gistfile1.txt",
+	        "verification": { "hash": "sha512-632b67707297c47e309548466ea44d5eceb205e1595198045295c7b14a804fcc6a42b44166631d636bf17ea2c0e00a51a00190511c9333147115ed0be695df19" }
+	      }
+	    }
+	  }
+	}`
+	out[8].Files = []File{
+		{
+			Name:     "bar",
+			Path:     "foo",
+			Contents: []string{"example file\n"},
+		},
+	}
+
+	tests = append(tests, newTest(name, in, out, mntDevices, config))
+
+	name = "Setting the hostname"
+	in = getBaseDisk()
+	out = getBaseDisk()
+	mntDevices = nil
+	config = `{
+	  "ignition": { "version": "2.0.0" },
+	  "storage": {
+	    "files": [{
+	      "filesystem": "root",
+	      "path": "/etc/hostname",
+	      "mode": 420,
+	      "contents": { "source": "data:,core1" }
+	    }]
+	  }
+	}`
+	out[8].Files = []File{
+		{
+			Name:     "hostname",
+			Path:     "etc",
+			Contents: []string{"core1"},
+			Mode:     "420",
+		},
+	}
+
+	tests = append(tests, newTest(name, in, out, mntDevices, config))
+
+	name = "Adding users"
+	in = getBaseDisk()
+	out = getBaseDisk()
+	mntDevices = nil
+	config = `"passwd": {
+	  "users": [
+	    {
+	      "name": "systemUser",
+	      "passwordHash": "$superSecretPasswordHash.",
+	      "sshAuthorizedKeys": [
+	        "ssh-rsa veryLongRSAPublicKey"
+	      ]
+	    },
+	    {
+	      "name": "jenkins",
+	      "create": {
+	        "uid": 1000
+	      }
+	    },
+	  ]
+	}`
+	out[8].Files = []File{
+		{
+			Name:     "passwd",
+			Path:     "etc",
+			Contents: []string{"TODO"},
+		},
+	}
 
 	return tests
 }
 
 func TestIgnitionBlackBox(t *testing.T) {
-	for _, test := range createTests() {
+	t.Log("Entered TestIgnitionBlackBox")
+	tests := createTests()
+	for _, test := range tests {
 		outer(t, test)
 	}
 }
 
 func outer(t *testing.T, test Test) {
+	t.Log(test.name)
+
 	imgName := "test.img"
 	imageSize := calculateImageSize(test.in)
 
@@ -274,14 +465,17 @@ func outer(t *testing.T, test Test) {
 	mountRootPartition(t, test.in)
 	mountPartitions(t, test.in)
 	createFiles(t, test.in)
-	dumpDiskInfo(t, imgName, test.in)
+	//dumpDiskInfo(t, imgName, test.in)
 	unmountPartitions(t, test.in)
 
 	// Ignition
+	config := test.config
 	for _, d := range test.mntDevices {
 		device := pickDevice(t, test.in, imgName, d.label)
-		updateIgnitionConfig(t, test.config, device, d.code)
+		config = strings.Replace(config, d.code, device, -1)
+		//t.Log(config, device, d.code)
 	}
+	writeIgnitionConfig(t, config)
 	root := getRootLocation(t, test.in)
 	runIgnition(t, "disks", root)
 	runIgnition(t, "files", root)
@@ -291,10 +485,9 @@ func outer(t *testing.T, test Test) {
 
 	// Validation
 	mountPartitions(t, test.out)
-	dumpDiskInfo(t, imgName, test.out)
+	//dumpDiskInfo(t, imgName, test.out)
 	validatePartitions(t, test.out, imgName)
 	validateFiles(t, test.out)
-	validateUnits(t, test.units, root)
 
 	// Cleanup
 	unmountPartitions(t, test.out)
@@ -317,7 +510,7 @@ func getRootLocation(t *testing.T, partitions []*Partition) string {
 func removeFile(t *testing.T, imgName string) {
 	err := os.Remove(imgName)
 	if err != nil {
-		t.Log(err)
+		//t.Log(err)
 	}
 }
 
@@ -325,14 +518,14 @@ func removeMountFolders(t *testing.T, partitions []*Partition) {
 	for _, p := range partitions {
 		err := os.RemoveAll(p.MountPath)
 		if err != nil {
-			t.Log(err)
+			//t.Log(err)
 		}
 	}
 }
 
 func runIgnition(t *testing.T, stage string, root string) {
 	out, err := exec.Command(
-		"bin/amd64/ignition", "-clear-cache", "-oem",
+		"ignition", "-clear-cache", "-oem",
 		"file", "-stage", stage, "-root", root).CombinedOutput()
 	debugInfo, derr := ioutil.ReadFile("/var/log/syslog")
 	if derr == nil {
@@ -343,7 +536,7 @@ func runIgnition(t *testing.T, stage string, root string) {
 				debugOut = append(debugOut, line)
 			}
 		}
-		t.Log(derr, debugOut)
+		//t.Log(derr, debugOut)
 	}
 	if err != nil {
 		t.Fatal("ignition", err, string(out))
@@ -367,15 +560,13 @@ func pickDevice(t *testing.T, partitions []*Partition, fileName string, label st
 	if err != nil {
 		t.Fatal("kpartx -l", err, string(kpartxOut))
 	}
-	t.Log(string(kpartxOut))
+	//t.Log(string(kpartxOut))
 	return fmt.Sprintf("/dev/mapper/%sp%d",
 		strings.Trim(strings.Split(string(kpartxOut), " ")[4], "/dev/"), number)
 }
 
-func updateIgnitionConfig(t *testing.T, config, device string, code string) {
-	err := ioutil.WriteFile(
-		"config.ign", []byte(strings.Replace(
-			config, code, device, -1)), 0644)
+func writeIgnitionConfig(t *testing.T, config string) {
+	err := ioutil.WriteFile("config.ign", []byte(config), 0644)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -583,7 +774,7 @@ func createPartitionTable(
 			opts = append(opts, fmt.Sprintf("-h=%s", intJoin(hybrids, ":")))
 		}
 	}
-	t.Log("/sbin/sgdisk", strings.Join(opts, " "))
+	//t.Log("/sbin/sgdisk", strings.Join(opts, " "))
 	sgdiskOut, err := exec.Command(
 		"/sbin/sgdisk", opts...).CombinedOutput()
 	if err != nil {
@@ -599,7 +790,7 @@ func kpartxAdd(t *testing.T, fileName string) string {
 	}
 	kpartxOut, err = exec.Command(
 		"/sbin/kpartx", "-l", fileName).CombinedOutput()
-	t.Log(string(kpartxOut), err)
+	//t.Log(string(kpartxOut), err)
 	return strings.Trim(strings.Split(string(kpartxOut), " ")[4], "/dev/")
 }
 
@@ -788,7 +979,7 @@ func validatePartitions(
 		if err != nil {
 			t.Fatal("df -T", err, string(df))
 		}
-		t.Log(e.Device, (string(df)))
+		//t.Log(e.Device, (string(df)))
 		lines = strings.Split(string(df), "\n")
 		if len(lines) < 2 {
 			t.Fatal("Couldn't verify FilesystemType")
@@ -825,6 +1016,18 @@ func validateFiles(t *testing.T, expected []*Partition) {
 				if expectedContents != actualContents {
 					t.Fatal("Contents of file", path, "do not match!",
 						expectedContents, actualContents)
+				}
+			}
+
+			if file.Mode != "" {
+				sout, err := exec.Command(
+					"stat", "-c", "%a", path).CombinedOutput()
+				statOut := string(sout)
+				if err != nil {
+					t.Fatal(err)
+				}
+				if file.Mode != statOut {
+					t.Fatal("File Mode does not match", path, file.Mode, statOut)
 				}
 			}
 		}
