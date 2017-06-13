@@ -525,6 +525,7 @@ func copyIdToRootPartition(t *testing.T, partitions []*Partition) {
 			_ = os.MkdirAll(strings.Join([]string{p.MountPath, "home"}, "/"), 0755)
 			_ = os.MkdirAll(strings.Join([]string{p.MountPath, "lib64"}, "/"), 0755)
 			_ = os.MkdirAll(strings.Join([]string{p.MountPath, "var/log"}, "/"), 0755)
+			_ = os.MkdirAll(strings.Join([]string{p.MountPath, "sbin"}, "/"), 0755)
 			_ = os.MkdirAll(strings.Join([]string{p.MountPath, "bin"}, "/"), 0755)
 			_ = os.MkdirAll(strings.Join([]string{p.MountPath, "etc/default"}, "/"), 0755)
 			_ = os.MkdirAll(strings.Join([]string{p.MountPath, "proc/self"}, "/"), 0755)
@@ -550,6 +551,7 @@ func copyIdToRootPartition(t *testing.T, partitions []*Partition) {
 			_, _ = exec.Command("cp", "/etc/ld.so.cache", strings.Join([]string{p.MountPath, "etc"}, "/")).CombinedOutput()
 			_, _ = exec.Command("cp", "/etc/login.defs", strings.Join([]string{p.MountPath, "etc"}, "/")).CombinedOutput()
 			_, _ = exec.Command("cp", "/etc/default/useradd", strings.Join([]string{p.MountPath, "etc/default"}, "/")).CombinedOutput()
+			_, _ = exec.Command("cp", "/sbin/useradd", strings.Join([]string{p.MountPath, "sbin"}, "/")).CombinedOutput()
 			_, _ = exec.Command("cp", "/bin/id", strings.Join([]string{p.MountPath, "bin"}, "/")).CombinedOutput()
 			_, _ = exec.Command("cp", "/bin/bash", strings.Join([]string{p.MountPath, "bin"}, "/")).CombinedOutput()
 			f, _ := os.OpenFile(strings.Join([]string{p.MountPath, "etc/passwd"}, "/"), os.O_RDONLY|os.O_CREATE, 0666)
@@ -590,7 +592,7 @@ func removeMountFolders(t *testing.T, partitions []*Partition) {
 
 func runIgnition(t *testing.T, stage string, root string) {
 	out, err := exec.Command(
-		"strace", "-o", "/tmp/strace", "-f", "ignition", "-clear-cache", "-oem",
+		"ignition", "-clear-cache", "-oem",
 		"file", "-stage", stage, "-root", root).CombinedOutput()
 	debugInfo, derr := ioutil.ReadFile("/var/log/syslog")
 	if derr == nil {
