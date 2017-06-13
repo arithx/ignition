@@ -211,7 +211,7 @@ func createTests() []Test {
 		{
 			Name:     "20-ignition.preset",
 			Path:     "etc/systemd/system-preset",
-			Contents: []string{"enable example.service",""},
+			Contents: []string{"enable example.service", ""},
 		},
 	}
 
