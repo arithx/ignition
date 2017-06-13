@@ -29,3 +29,5 @@ cleanup
 if [ "$OUT" == *"FAIL"* ]; then
     return 1
 fi
+
+journalctl -t ignition --all --priority=7 --no-pager
