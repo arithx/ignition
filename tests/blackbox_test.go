@@ -299,42 +299,6 @@ func createTests() []Test {
 
 	tests = append(tests, newTest(name, in, out, mntDevices, config))
 
-	name = "Adding users"
-	in = getBaseDisk()
-	out = getBaseDisk()
-	mntDevices = nil
-	config = `{
-		"ignition": {
-			"version": "2.0.0"
-		},
-		"passwd": {
-			"users": [{
-					"name": "test",
-					"create": {},
-					"passwordHash": "zJW/EKqqIk44o",
-					"sshAuthorizedKeys": [
-						"ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABAQDBRZPFJNOvQRfokigTtl0IBi71LHZrFOk4EJ3Zowtk/bX5uIVai0Cd4+hqlocYL10idgtFBH28skeKfsmHwgS9XwOvP+g+kqAl7yCz8JEzIUzl1fxNZDToi0jA3B5MwXkpt+IWfnabwi2cRZhlzrz9rO+eExu5s3NfaRmmmCYrjCJIRPKSCrW8U0n9fVSbX4PDdMXVmH7r+t8MtR8523vCbakFR/Y0YIqkPVdfuUXHh9rDCdH4B7mt7nYX2LWQXGUvmI13mgQoy04ifkaR3ImuOMp3Y1J1gm6clO74IMCq/sK9+XJhbxMPPHUoUJ2EwbaG7Dbh3iqz47e9oVki4gIH stephenlowrie@localhost.localdomain"
-					]
-				},
-				{
-					"name": "jenkins",
-					"create": {
-						"uid": 1000
-					}
-				}
-			]
-		}
-	}`
-	out[8].Files = []File{
-		{
-			Name:     "passwd",
-			Path:     "etc",
-			Contents: []string{"TODO"},
-		},
-	}
-
-	tests = append(tests, newTest(name, in, out, mntDevices, config))
-
 	name = "Setting the hostname"
 	in = getBaseDisk()
 	out = getBaseDisk()
@@ -437,6 +401,42 @@ func createTests() []Test {
 
 	tests = append(tests, newTest(name, in, out, mntDevices, config))
 
+	name = "Adding users"
+	in = getBaseDisk()
+	out = getBaseDisk()
+	mntDevices = nil
+	config = `{
+		"ignition": {
+			"version": "2.0.0"
+		},
+		"passwd": {
+			"users": [{
+					"name": "test",
+					"create": {},
+					"passwordHash": "zJW/EKqqIk44o",
+					"sshAuthorizedKeys": [
+						"ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABAQDBRZPFJNOvQRfokigTtl0IBi71LHZrFOk4EJ3Zowtk/bX5uIVai0Cd4+hqlocYL10idgtFBH28skeKfsmHwgS9XwOvP+g+kqAl7yCz8JEzIUzl1fxNZDToi0jA3B5MwXkpt+IWfnabwi2cRZhlzrz9rO+eExu5s3NfaRmmmCYrjCJIRPKSCrW8U0n9fVSbX4PDdMXVmH7r+t8MtR8523vCbakFR/Y0YIqkPVdfuUXHh9rDCdH4B7mt7nYX2LWQXGUvmI13mgQoy04ifkaR3ImuOMp3Y1J1gm6clO74IMCq/sK9+XJhbxMPPHUoUJ2EwbaG7Dbh3iqz47e9oVki4gIH stephenlowrie@localhost.localdomain"
+					]
+				},
+				{
+					"name": "jenkins",
+					"create": {
+						"uid": 1000
+					}
+				}
+			]
+		}
+	}`
+	out[8].Files = []File{
+		{
+			Name:     "passwd",
+			Path:     "etc",
+			Contents: []string{"TODO"},
+		},
+	}
+
+	tests = append(tests, newTest(name, in, out, mntDevices, config))
+
 	return tests
 }
 
@@ -444,17 +444,26 @@ func TestIgnitionBlackBox(t *testing.T) {
 	t.Log("Entered TestIgnitionBlackBox")
 	tests := createTests()
 	for _, test := range tests {
-		//t.Run(test.name, func(t *testing.T) {
-		//	outer(t, test)
-		//})
-		outer(t, test)
+		t.Run(test.name, func(t *testing.T) {
+			outer(t, test)
+		})
+		//outer(t, test)
 	}
 }
 
 func PreCleanup(t *testing.T) {
-	mappers, _ := filepath.Glob("/tmp/hd1p*")
-	for _, m := range mappers {
-		_, _ = exec.Command("umount", m).CombinedOutput()
+	mountpoints, _ := exec.Command("findmnt", "-l", "-o", "target").CombinedOutput()
+	points := strings.Split(string(mountpoints), "\n")
+	for i := len(points)-1; i >= 0; i-- {
+		for _, pat := range []string{"/tmp/hd1p*", "/tmp/hd1p*/*"} {
+			match, err := filepath.Match(pat, points[i])
+			if err != nil {
+				t.Log(err)
+			}
+			if match {
+				_, _ = exec.Command("umount", points[i]).CombinedOutput()
+			}
+		}
 	}
 	removeFile(t, "config.ign")
 	removeFile(t, "test.img")
@@ -557,10 +566,10 @@ func copyIdToRootPartition(t *testing.T, partitions []*Partition) {
 			_, _ = exec.Command("cp", "/sbin/useradd", strings.Join([]string{p.MountPath, "sbin"}, "/")).CombinedOutput()
 			_, _ = exec.Command("cp", "/bin/id", strings.Join([]string{p.MountPath, "bin"}, "/")).CombinedOutput()
 			_, _ = exec.Command("cp", "/bin/bash", strings.Join([]string{p.MountPath, "bin"}, "/")).CombinedOutput()
-			/*f, _ := filepath.Glob("/usr/share/baselayout")
+			f, _ := filepath.Glob("/usr/share/baselayout/*")
 			for _, fi := range f {
 				_, _ = exec.Command("cp", fi, filepath.Join(p.MountPath, "usr", "share", "baselayout")).CombinedOutput()
-			}*/
+			}
 		}
 	}
 }
