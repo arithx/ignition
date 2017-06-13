@@ -454,7 +454,7 @@ func TestIgnitionBlackBox(t *testing.T) {
 func PreCleanup(t *testing.T) {
 	mountpoints, _ := exec.Command("findmnt", "-l", "-o", "target").CombinedOutput()
 	points := strings.Split(string(mountpoints), "\n")
-	for i := len(points)-1; i >= 0; i-- {
+	for i := len(points) - 1; i >= 0; i-- {
 		for _, pat := range []string{"/tmp/hd1p*", "/tmp/hd1p*/*"} {
 			match, err := filepath.Match(pat, points[i])
 			if err != nil {
