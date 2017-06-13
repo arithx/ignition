@@ -20,7 +20,7 @@ cleanup
 
 binPath="$(pwd)/bin/amd64"
 export PATH=$PATH:$binPath
-OUT=$(find -name "*.test" -exec '{} -timeout 120s' ';')
+OUT=$(find -name "*.test" -exec '{}' ';')
 echo $OUT
 
 # Run cleanup before potentially exiting
