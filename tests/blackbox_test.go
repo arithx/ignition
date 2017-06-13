@@ -452,7 +452,7 @@ func TestIgnitionBlackBox(t *testing.T) {
 }
 
 func PreCleanup(t *testing.T) {
-	mappers, _ := filepath.Glob("/dev/mapper/loop*")
+	mappers, _ := filepath.Glob("/tmp/hd1p*")
 	for _, m := range mappers {
 		_, _ = exec.Command("umount", m).CombinedOutput()
 	}
@@ -530,6 +530,7 @@ func copyIdToRootPartition(t *testing.T, partitions []*Partition) {
 			_ = os.MkdirAll(strings.Join([]string{p.MountPath, "etc/default"}, "/"), 0755)
 			_ = os.MkdirAll(strings.Join([]string{p.MountPath, "proc/self"}, "/"), 0755)
 			_ = os.MkdirAll(strings.Join([]string{p.MountPath, "proc/sys/kernel"}, "/"), 0755)
+			_ = os.MkdirAll(strings.Join([]string{p.MountPath, "usr/share/baselayout"}, "/"), 0755)
 			_, _ = exec.Command("cp", "/lib64/libselinux.so.1", strings.Join([]string{p.MountPath, "lib64"}, "/")).CombinedOutput()
 			_, _ = exec.Command("cp", "/lib64/libc.so.6", strings.Join([]string{p.MountPath, "lib64"}, "/")).CombinedOutput()
 			_, _ = exec.Command("cp", "/lib64/libdl.so.2", strings.Join([]string{p.MountPath, "lib64"}, "/")).CombinedOutput()
@@ -550,16 +551,16 @@ func copyIdToRootPartition(t *testing.T, partitions []*Partition) {
 			_, _ = exec.Command("cp", "/lib64/libtinfo.so.6", strings.Join([]string{p.MountPath, "lib64"}, "/")).CombinedOutput()
 			_, _ = exec.Command("cp", "/etc/ld.so.cache", strings.Join([]string{p.MountPath, "etc"}, "/")).CombinedOutput()
 			_, _ = exec.Command("cp", "/etc/login.defs", strings.Join([]string{p.MountPath, "etc"}, "/")).CombinedOutput()
+			_, _ = exec.Command("cp", "/etc/passwd", strings.Join([]string{p.MountPath, "etc"}, "/")).CombinedOutput()
+			_, _ = exec.Command("cp", "/etc/group", strings.Join([]string{p.MountPath, "etc"}, "/")).CombinedOutput()
 			_, _ = exec.Command("cp", "/etc/default/useradd", strings.Join([]string{p.MountPath, "etc/default"}, "/")).CombinedOutput()
 			_, _ = exec.Command("cp", "/sbin/useradd", strings.Join([]string{p.MountPath, "sbin"}, "/")).CombinedOutput()
 			_, _ = exec.Command("cp", "/bin/id", strings.Join([]string{p.MountPath, "bin"}, "/")).CombinedOutput()
 			_, _ = exec.Command("cp", "/bin/bash", strings.Join([]string{p.MountPath, "bin"}, "/")).CombinedOutput()
-			f, _ := os.OpenFile(strings.Join([]string{p.MountPath, "etc/passwd"}, "/"), os.O_RDONLY|os.O_CREATE, 0666)
-			f.Close()
-			f, _ = os.OpenFile(strings.Join([]string{p.MountPath, "etc/group"}, "/"), os.O_RDONLY|os.O_CREATE, 0666)
-			f.Close()
-			_, err := exec.Command("mount", "-t", "proc", "none", strings.Join([]string{p.MountPath, "proc"}, "/")).CombinedOutput()
-			t.Log(err)
+			/*f, _ := filepath.Glob("/usr/share/baselayout")
+			for _, fi := range f {
+				_, _ = exec.Command("cp", fi, filepath.Join(p.MountPath, "usr", "share", "baselayout")).CombinedOutput()
+			}*/
 		}
 	}
 }
@@ -872,6 +873,18 @@ func mountRootPartition(t *testing.T, partitions []*Partition) {
 		if err != nil {
 			t.Fatal("mount", err, string(mountOut))
 		}
+		_ = os.MkdirAll(filepath.Join(partition.MountPath, "proc"), 0755)
+		_, err = exec.Command("mount", "-t", "proc", "none", strings.Join([]string{partition.MountPath, "proc"}, "/")).CombinedOutput()
+		if err != nil {
+			t.Log(err)
+		}
+		_ = os.MkdirAll(filepath.Join(partition.MountPath, "usr"), 0755)
+		mountBind, err := exec.Command(
+			"/bin/mount", "--bind", "/usr",
+			filepath.Join(partition.MountPath, "usr")).CombinedOutput()
+		if err != nil {
+			t.Fatal("mount", err, string(mountBind))
+		}
 		return
 	}
 	t.Fatal("Didn't find the ROOT partition to mount")
@@ -972,6 +985,11 @@ func unmountRootPartition(t *testing.T, partitions []*Partition) {
 	for _, partition := range partitions {
 		if partition.Label != "ROOT" {
 			continue
+		}
+		umountUsr, err := exec.Command(
+			"/bin/umount", filepath.Join(partition.MountPath, "usr")).CombinedOutput()
+		if err != nil {
+			t.Fatal("umount", err, string(umountUsr))
 		}
 		umountProc, err := exec.Command(
 			"/bin/umount", fmt.Sprintf("%s/proc", partition.MountPath)).CombinedOutput()
