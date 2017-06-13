@@ -20,6 +20,7 @@ import (
 	"io/ioutil"
 	"os"
 	"os/exec"
+	"path/filepath"
 	"strconv"
 	"strings"
 	"testing"
@@ -298,6 +299,68 @@ func createTests() []Test {
 
 	tests = append(tests, newTest(name, in, out, mntDevices, config))
 
+	name = "Adding users"
+	in = getBaseDisk()
+	out = getBaseDisk()
+	mntDevices = nil
+	config = `{
+		"ignition": {
+			"version": "2.0.0"
+		},
+		"passwd": {
+			"users": [{
+					"name": "test",
+					"create": {},
+					"passwordHash": "zJW/EKqqIk44o",
+					"sshAuthorizedKeys": [
+						"ssh-rsa veryLongRSAPublicKey"
+					]
+				},
+				{
+					"name": "jenkins",
+					"create": {
+						"uid": 1000
+					}
+				}
+			]
+		}
+	}`
+	out[8].Files = []File{
+		{
+			Name:     "passwd",
+			Path:     "etc",
+			Contents: []string{"TODO"},
+		},
+	}
+
+	tests = append(tests, newTest(name, in, out, mntDevices, config))
+
+	name = "Setting the hostname"
+	in = getBaseDisk()
+	out = getBaseDisk()
+	mntDevices = nil
+	config = `{
+	  "ignition": { "version": "2.0.0" },
+	  "storage": {
+	    "files": [{
+	      "filesystem": "root",
+	      "path": "/etc/hostname",
+	      "mode": 420,
+	      "contents": { "source": "data:,core1" }
+	    }]
+	  }
+	}`
+	out[8].Files = []File{
+		{
+			Name:     "hostname",
+			Path:     "etc",
+			Contents: []string{"core1"},
+			Mode:     "420",
+		},
+	}
+
+	tests = append(tests, newTest(name, in, out, mntDevices, config))
+
 	name = "Create Files on the Root Filesystem"
 	in = getBaseDisk()
 	out = getBaseDisk()
@@ -374,61 +437,6 @@ func createTests() []Test {
 
 	tests = append(tests, newTest(name, in, out, mntDevices, config))
 
-	name = "Setting the hostname"
-	in = getBaseDisk()
-	out = getBaseDisk()
-	mntDevices = nil
-	config = `{
-	  "ignition": { "version": "2.0.0" },
-	  "storage": {
-	    "files": [{
-	      "filesystem": "root",
-	      "path": "/etc/hostname",
-	      "mode": 420,
-	      "contents": { "source": "data:,core1" }
-	    }]
-	  }
-	}`
-	out[8].Files = []File{
-		{
-			Name:     "hostname",
-			Path:     "etc",
-			Contents: []string{"core1"},
-			Mode:     "420",
-		},
-	}
-
-	tests = append(tests, newTest(name, in, out, mntDevices, config))
-
-	name = "Adding users"
-	in = getBaseDisk()
-	out = getBaseDisk()
-	mntDevices = nil
-	config = `"passwd": {
-	  "users": [
-	    {
-	      "name": "systemUser",
-	      "passwordHash": "$superSecretPasswordHash.",
-	      "sshAuthorizedKeys": [
-	        "ssh-rsa veryLongRSAPublicKey"
-	      ]
-	    },
-	    {
-	      "name": "jenkins",
-	      "create": {
-	        "uid": 1000
-	      }
-	    },
-	  ]
-	}`
-	out[8].Files = []File{
-		{
-			Name:     "passwd",
-			Path:     "etc",
-			Contents: []string{"TODO"},
-		},
-	}
-
 	return tests
 }
 
@@ -436,11 +444,24 @@ func TestIgnitionBlackBox(t *testing.T) {
 	t.Log("Entered TestIgnitionBlackBox")
 	tests := createTests()
 	for _, test := range tests {
+		//t.Run(test.name, func(t *testing.T) {
+		//	outer(t, test)
+		//})
 		outer(t, test)
 	}
 }
 
+func PreCleanup(t *testing.T) {
+	mappers, _ := filepath.Glob("/dev/mapper/loop*")
+	for _, m := range mappers {
+		_, _ = exec.Command("umount", m).CombinedOutput()
+	}
+	removeFile(t, "config.ign")
+	removeFile(t, "test.img")
+}
+
 func outer(t *testing.T, test Test) {
+	PreCleanup(t)
 	t.Log(test.name)
 
 	imgName := "test.img"
@@ -463,6 +484,7 @@ func outer(t *testing.T, test Test) {
 	createVolume(t, imgName, imageSize, 20, 16, 63, test.in)
 	setDevices(t, imgName, test.in)
 	mountRootPartition(t, test.in)
+	copyIdToRootPartition(t, test.in)
 	mountPartitions(t, test.in)
 	createFiles(t, test.in)
 	//dumpDiskInfo(t, imgName, test.in)
@@ -497,6 +519,37 @@ func outer(t *testing.T, test Test) {
 	removeFile(t, imgName)
 }
 
+func copyIdToRootPartition(t *testing.T, partitions []*Partition) {
+	for _, p := range partitions {
+		if p.Label == "ROOT" {
+			_ = os.MkdirAll(strings.Join([]string{p.MountPath, "lib64"}, "/"), 644)
+			_ = os.MkdirAll(strings.Join([]string{p.MountPath, "bin"}, "/"), 644)
+			_ = os.MkdirAll(strings.Join([]string{p.MountPath, "etc"}, "/"), 644)
+			_, _ = exec.Command("cp", "/lib64/libselinux.so.1", strings.Join([]string{p.MountPath, "lib64"}, "/")).CombinedOutput()
+			_, _ = exec.Command("cp", "/lib64/libc.so.6", strings.Join([]string{p.MountPath, "lib64"}, "/")).CombinedOutput()
+			_, _ = exec.Command("cp", "/lib64/libdl.so.2", strings.Join([]string{p.MountPath, "lib64"}, "/")).CombinedOutput()
+			_, _ = exec.Command("cp", "/lib64/libpcre.so.1", strings.Join([]string{p.MountPath, "lib64"}, "/")).CombinedOutput()
+			_, _ = exec.Command("cp", "/lib64/ld-linux-x86-64.so.2", strings.Join([]string{p.MountPath, "lib64"}, "/")).CombinedOutput()
+			_, _ = exec.Command("cp", "/lib64/libpthread.so.0", strings.Join([]string{p.MountPath, "lib64"}, "/")).CombinedOutput()
+			_, _ = exec.Command("cp", "/lib64/libaudit-vdso.so.1", strings.Join([]string{p.MountPath, "lib64"}, "/")).CombinedOutput()
+			_, _ = exec.Command("cp", "/lib64/libselinux.so.1", strings.Join([]string{p.MountPath, "lib64"}, "/")).CombinedOutput()
+			_, _ = exec.Command("cp", "/lib64/libsemanage.so.1", strings.Join([]string{p.MountPath, "lib64"}, "/")).CombinedOutput()
+			_, _ = exec.Command("cp", "/lib64/libacl.so.1", strings.Join([]string{p.MountPath, "lib64"}, "/")).CombinedOutput()
+			_, _ = exec.Command("cp", "/lib64/libattr.so.1", strings.Join([]string{p.MountPath, "lib64"}, "/")).CombinedOutput()
+			_, _ = exec.Command("cp", "/lib64/libcap-ng.so.0", strings.Join([]string{p.MountPath, "lib64"}, "/")).CombinedOutput()
+			_, _ = exec.Command("cp", "/lib64/libsepol.so.1", strings.Join([]string{p.MountPath, "lib64"}, "/")).CombinedOutput()
+			_, _ = exec.Command("cp", "/lib64/libbz2.so.1", strings.Join([]string{p.MountPath, "lib64"}, "/")).CombinedOutput()
+			_, _ = exec.Command("cp", "/lib64/libustr-1.0.so.1", strings.Join([]string{p.MountPath, "lib64"}, "/")).CombinedOutput()
+			_, _ = exec.Command("cp", "/lib64/libpthread.so.0", strings.Join([]string{p.MountPath, "lib64"}, "/")).CombinedOutput()
+			_, _ = exec.Command("cp", "/etc/login.defs", strings.Join([]string{p.MountPath, "etc"}, "/")).CombinedOutput()
+			_, _ = exec.Command("cp", "/etc/passwd", strings.Join([]string{p.MountPath, "etc"}, "/")).CombinedOutput()
+			_, _ = exec.Command("cp", "/etc/group", strings.Join([]string{p.MountPath, "etc"}, "/")).CombinedOutput()
+			_, _ = exec.Command("cp", "/usr/share/zoneinfo/America/Los_Angeles", strings.Join([]string{p.MountPath, "etc", "localtime"}, "/")).CombinedOutput()
+			_, _ = exec.Command("cp", "/bin/id", strings.Join([]string{p.MountPath, "bin"}, "/")).CombinedOutput()
+		}
+	}
+}
+
 func getRootLocation(t *testing.T, partitions []*Partition) string {
 	for _, p := range partitions {
 		if p.Label == "ROOT" {
@@ -518,7 +571,7 @@ func removeMountFolders(t *testing.T, partitions []*Partition) {
 	for _, p := range partitions {
 		err := os.RemoveAll(p.MountPath)
 		if err != nil {
-			//t.Log(err)
+			t.Log(err)
 		}
 	}
 }
