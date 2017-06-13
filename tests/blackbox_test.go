@@ -522,13 +522,13 @@ func outer(t *testing.T, test Test) {
 func copyIdToRootPartition(t *testing.T, partitions []*Partition) {
 	for _, p := range partitions {
 		if p.Label == "ROOT" {
-			_ = os.MkdirAll(strings.Join([]string{p.MountPath, "home"}, "/"), 644)
-			_ = os.MkdirAll(strings.Join([]string{p.MountPath, "lib64"}, "/"), 644)
-			_ = os.MkdirAll(strings.Join([]string{p.MountPath, "var/log"}, "/"), 644)
-			_ = os.MkdirAll(strings.Join([]string{p.MountPath, "bin"}, "/"), 644)
-			_ = os.MkdirAll(strings.Join([]string{p.MountPath, "etc/default"}, "/"), 644)
-			_ = os.MkdirAll(strings.Join([]string{p.MountPath, "proc/self"}, "/"), 644)
-			_ = os.MkdirAll(strings.Join([]string{p.MountPath, "proc/sys/kernel"}, "/"), 644)
+			_ = os.MkdirAll(strings.Join([]string{p.MountPath, "home"}, "/"), 0755)
+			_ = os.MkdirAll(strings.Join([]string{p.MountPath, "lib64"}, "/"), 0755)
+			_ = os.MkdirAll(strings.Join([]string{p.MountPath, "var/log"}, "/"), 0755)
+			_ = os.MkdirAll(strings.Join([]string{p.MountPath, "bin"}, "/"), 0755)
+			_ = os.MkdirAll(strings.Join([]string{p.MountPath, "etc/default"}, "/"), 0755)
+			_ = os.MkdirAll(strings.Join([]string{p.MountPath, "proc/self"}, "/"), 0755)
+			_ = os.MkdirAll(strings.Join([]string{p.MountPath, "proc/sys/kernel"}, "/"), 0755)
 			_, _ = exec.Command("cp", "/lib64/libselinux.so.1", strings.Join([]string{p.MountPath, "lib64"}, "/")).CombinedOutput()
 			_, _ = exec.Command("cp", "/lib64/libc.so.6", strings.Join([]string{p.MountPath, "lib64"}, "/")).CombinedOutput()
 			_, _ = exec.Command("cp", "/lib64/libdl.so.2", strings.Join([]string{p.MountPath, "lib64"}, "/")).CombinedOutput()
@@ -556,6 +556,8 @@ func copyIdToRootPartition(t *testing.T, partitions []*Partition) {
 			f.Close()
 			f, _ = os.OpenFile(strings.Join([]string{p.MountPath, "etc/group"}, "/"), os.O_RDONLY|os.O_CREATE, 0666)
 			f.Close()
+			_, err := exec.Command("mount", "-t", "proc", "none", strings.Join([]string{p.MountPath, "proc"}, "/")).CombinedOutput()
+			t.Log(err)
 		}
 	}
 }
@@ -588,7 +590,7 @@ func removeMountFolders(t *testing.T, partitions []*Partition) {
 
 func runIgnition(t *testing.T, stage string, root string) {
 	out, err := exec.Command(
-		"ignition", "-clear-cache", "-oem",
+		"strace", "-o", "/tmp/strace", "-f", "ignition", "-clear-cache", "-oem",
 		"file", "-stage", stage, "-root", root).CombinedOutput()
 	debugInfo, derr := ioutil.ReadFile("/var/log/syslog")
 	if derr == nil {
@@ -968,6 +970,11 @@ func unmountRootPartition(t *testing.T, partitions []*Partition) {
 	for _, partition := range partitions {
 		if partition.Label != "ROOT" {
 			continue
+		}
+		umountProc, err := exec.Command(
+			"/bin/umount", fmt.Sprintf("%s/proc", partition.MountPath)).CombinedOutput()
+		if err != nil {
+			t.Fatal("umount", err, string(umountProc))
 		}
 		umountOut, err := exec.Command(
 			"/bin/umount", partition.Device).CombinedOutput()
