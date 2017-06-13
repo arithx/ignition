@@ -560,19 +560,16 @@ func copyIdToRootPartition(t *testing.T, partitions []*Partition) {
 			_, _ = exec.Command("cp", "/lib64/libtinfo.so.6", strings.Join([]string{p.MountPath, "lib64"}, "/")).CombinedOutput()
 			_, _ = exec.Command("cp", "/etc/ld.so.cache", strings.Join([]string{p.MountPath, "etc"}, "/")).CombinedOutput()
 			_, _ = exec.Command("cp", "/etc/login.defs", strings.Join([]string{p.MountPath, "etc"}, "/")).CombinedOutput()
+			_, _ = exec.Command("cp", "/etc/nsswitch.conf", strings.Join([]string{p.MountPath, "etc"}, "/")).CombinedOutput()
 			_, _ = exec.Command("cp", "/etc/passwd", strings.Join([]string{p.MountPath, "etc"}, "/")).CombinedOutput()
 			_, _ = exec.Command("cp", "/etc/group", strings.Join([]string{p.MountPath, "etc"}, "/")).CombinedOutput()
 			_, _ = exec.Command("cp", "/etc/default/useradd", strings.Join([]string{p.MountPath, "etc/default"}, "/")).CombinedOutput()
 			_, _ = exec.Command("cp", "/sbin/useradd", strings.Join([]string{p.MountPath, "sbin"}, "/")).CombinedOutput()
 			_, _ = exec.Command("cp", "/bin/id", strings.Join([]string{p.MountPath, "bin"}, "/")).CombinedOutput()
 			_, _ = exec.Command("cp", "/bin/bash", strings.Join([]string{p.MountPath, "bin"}, "/")).CombinedOutput()
-			f, _ := filepath.Glob("/usr/share/baselayout/*")
-			for _, fi := range f {
-				out, err := exec.Command("cp", fi, filepath.Join(p.MountPath, "usr", "share", "baselayout")).CombinedOutput()
-				if err != nil {
-					t.Log(err, string(out))
-				}
-			}
+			_, _ = exec.Command("cp", "/usr/share/baselayout/group", strings.Join([]string{p.MountPath, "usr/share/baselayout"}, "/")).CombinedOutput()
+			_, _ = exec.Command("cp", "/usr/share/baselayout/passwd", strings.Join([]string{p.MountPath, "usr/share/baselayout"}, "/")).CombinedOutput()
+			_, _ = exec.Command("cp", "/usr/share/baselayout/nsswitch.conf", strings.Join([]string{p.MountPath, "usr/share/baselayout"}, "/")).CombinedOutput()
 		}
 	}
 }
