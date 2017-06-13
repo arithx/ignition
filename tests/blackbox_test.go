@@ -313,7 +313,7 @@ func createTests() []Test {
 					"create": {},
 					"passwordHash": "zJW/EKqqIk44o",
 					"sshAuthorizedKeys": [
-						"ssh-rsa veryLongRSAPublicKey"
+						"ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABAQDBRZPFJNOvQRfokigTtl0IBi71LHZrFOk4EJ3Zowtk/bX5uIVai0Cd4+hqlocYL10idgtFBH28skeKfsmHwgS9XwOvP+g+kqAl7yCz8JEzIUzl1fxNZDToi0jA3B5MwXkpt+IWfnabwi2cRZhlzrz9rO+eExu5s3NfaRmmmCYrjCJIRPKSCrW8U0n9fVSbX4PDdMXVmH7r+t8MtR8523vCbakFR/Y0YIqkPVdfuUXHh9rDCdH4B7mt7nYX2LWQXGUvmI13mgQoy04ifkaR3ImuOMp3Y1J1gm6clO74IMCq/sK9+XJhbxMPPHUoUJ2EwbaG7Dbh3iqz47e9oVki4gIH stephenlowrie@localhost.localdomain"
 					]
 				},
 				{
@@ -522,9 +522,13 @@ func outer(t *testing.T, test Test) {
 func copyIdToRootPartition(t *testing.T, partitions []*Partition) {
 	for _, p := range partitions {
 		if p.Label == "ROOT" {
+			_ = os.MkdirAll(strings.Join([]string{p.MountPath, "home"}, "/"), 644)
 			_ = os.MkdirAll(strings.Join([]string{p.MountPath, "lib64"}, "/"), 644)
+			_ = os.MkdirAll(strings.Join([]string{p.MountPath, "var/log"}, "/"), 644)
 			_ = os.MkdirAll(strings.Join([]string{p.MountPath, "bin"}, "/"), 644)
-			_ = os.MkdirAll(strings.Join([]string{p.MountPath, "etc"}, "/"), 644)
+			_ = os.MkdirAll(strings.Join([]string{p.MountPath, "etc/default"}, "/"), 644)
+			_ = os.MkdirAll(strings.Join([]string{p.MountPath, "proc/self"}, "/"), 644)
+			_ = os.MkdirAll(strings.Join([]string{p.MountPath, "proc/sys/kernel"}, "/"), 644)
 			_, _ = exec.Command("cp", "/lib64/libselinux.so.1", strings.Join([]string{p.MountPath, "lib64"}, "/")).CombinedOutput()
 			_, _ = exec.Command("cp", "/lib64/libc.so.6", strings.Join([]string{p.MountPath, "lib64"}, "/")).CombinedOutput()
 			_, _ = exec.Command("cp", "/lib64/libdl.so.2", strings.Join([]string{p.MountPath, "lib64"}, "/")).CombinedOutput()
@@ -541,11 +545,17 @@ func copyIdToRootPartition(t *testing.T, partitions []*Partition) {
 			_, _ = exec.Command("cp", "/lib64/libbz2.so.1", strings.Join([]string{p.MountPath, "lib64"}, "/")).CombinedOutput()
 			_, _ = exec.Command("cp", "/lib64/libustr-1.0.so.1", strings.Join([]string{p.MountPath, "lib64"}, "/")).CombinedOutput()
 			_, _ = exec.Command("cp", "/lib64/libpthread.so.0", strings.Join([]string{p.MountPath, "lib64"}, "/")).CombinedOutput()
+			_, _ = exec.Command("cp", "/lib64/libnss_files.so.2", strings.Join([]string{p.MountPath, "lib64"}, "/")).CombinedOutput()
+			_, _ = exec.Command("cp", "/lib64/libtinfo.so.6", strings.Join([]string{p.MountPath, "lib64"}, "/")).CombinedOutput()
+			_, _ = exec.Command("cp", "/etc/ld.so.cache", strings.Join([]string{p.MountPath, "etc"}, "/")).CombinedOutput()
 			_, _ = exec.Command("cp", "/etc/login.defs", strings.Join([]string{p.MountPath, "etc"}, "/")).CombinedOutput()
-			_, _ = exec.Command("cp", "/etc/passwd", strings.Join([]string{p.MountPath, "etc"}, "/")).CombinedOutput()
-			_, _ = exec.Command("cp", "/etc/group", strings.Join([]string{p.MountPath, "etc"}, "/")).CombinedOutput()
-			_, _ = exec.Command("cp", "/usr/share/zoneinfo/America/Los_Angeles", strings.Join([]string{p.MountPath, "etc", "localtime"}, "/")).CombinedOutput()
+			_, _ = exec.Command("cp", "/etc/default/useradd", strings.Join([]string{p.MountPath, "etc/default"}, "/")).CombinedOutput()
 			_, _ = exec.Command("cp", "/bin/id", strings.Join([]string{p.MountPath, "bin"}, "/")).CombinedOutput()
+			_, _ = exec.Command("cp", "/bin/bash", strings.Join([]string{p.MountPath, "bin"}, "/")).CombinedOutput()
+			f, _ := os.OpenFile(strings.Join([]string{p.MountPath, "etc/passwd"}, "/"), os.O_RDONLY|os.O_CREATE, 0666)
+			f.Close()
+			f, _ = os.OpenFile(strings.Join([]string{p.MountPath, "etc/group"}, "/"), os.O_RDONLY|os.O_CREATE, 0666)
+			f.Close()
 		}
 	}
 }
