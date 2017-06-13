@@ -568,7 +568,7 @@ func copyIdToRootPartition(t *testing.T, partitions []*Partition) {
 			_, _ = exec.Command("cp", "/bin/bash", strings.Join([]string{p.MountPath, "bin"}, "/")).CombinedOutput()
 			f, _ := filepath.Glob("/usr/share/baselayout/*")
 			for _, fi := range f {
-				_, err = exec.Command("cp", fi, filepath.Join(p.MountPath, "usr", "share", "baselayout")).CombinedOutput()
+				_, err := exec.Command("cp", fi, filepath.Join(p.MountPath, "usr", "share", "baselayout")).CombinedOutput()
 				if err != nil {
 					t.Log(err)
 				}
