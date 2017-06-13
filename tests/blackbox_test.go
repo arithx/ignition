@@ -567,17 +567,17 @@ func copyIdToRootPartition(t *testing.T, partitions []*Partition) {
 			_, _ = exec.Command("cp", "/sbin/useradd", strings.Join([]string{p.MountPath, "sbin"}, "/")).CombinedOutput()
 			_, _ = exec.Command("cp", "/bin/id", strings.Join([]string{p.MountPath, "bin"}, "/")).CombinedOutput()
 			_, _ = exec.Command("cp", "/bin/bash", strings.Join([]string{p.MountPath, "bin"}, "/")).CombinedOutput()
-			_, err := exec.Command("cp", "/usr/share/baselayout/group", strings.Join([]string{p.MountPath, "usr/share/baselayout"}, "/")).CombinedOutput()
+			out, err := exec.Command("cp", "/usr/share/baselayout/group", strings.Join([]string{p.MountPath, "usr/share/baselayout"}, "/")).CombinedOutput()
 			if err != nil {
-				t.Log(err)
+				t.Log(err, string(out))
 			}
-			_, err = exec.Command("cp", "/usr/share/baselayout/passwd", strings.Join([]string{p.MountPath, "usr/share/baselayout"}, "/")).CombinedOutput()
+			out, err = exec.Command("cp", "/usr/share/baselayout/passwd", strings.Join([]string{p.MountPath, "usr/share/baselayout"}, "/")).CombinedOutput()
 			if err != nil {
-				t.Log(err)
+				t.Log(err, string(out))
 			}
-			_, err = exec.Command("cp", "/usr/share/baselayout/nsswitch.conf", strings.Join([]string{p.MountPath, "usr/share/baselayout"}, "/")).CombinedOutput()
+			out, err = exec.Command("cp", "/usr/share/baselayout/nsswitch.conf", strings.Join([]string{p.MountPath, "usr/share/baselayout"}, "/")).CombinedOutput()
 			if err != nil {
-				t.Log(err)
+				t.Log(err, string(out))
 			}
 		}
 	}
