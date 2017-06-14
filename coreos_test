@@ -2,8 +2,6 @@
 
 cleanup()
 {
-    rm -rf /sysroot
-
     if [ "$(cat /proc/mounts | grep /mnt/hd)" != "" ]; then
         find /tmp/hd* | xargs umount
     fi
