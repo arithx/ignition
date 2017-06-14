@@ -319,7 +319,7 @@ func createTests() []Test {
 			Name:     "hostname",
 			Path:     "etc",
 			Contents: []string{"core1"},
-			Mode:     "420",
+			Mode:     "644",
 		},
 	}
 
@@ -421,7 +421,7 @@ func createTests() []Test {
 				{
 					"name": "jenkins",
 					"create": {
-						"uid": 1000
+						"uid": 1020
 					}
 				}
 			]
@@ -431,7 +431,17 @@ func createTests() []Test {
 		{
 			Name:     "passwd",
 			Path:     "etc",
-			Contents: []string{"TODO"},
+			Contents: []string{"root:x:0:0:root:/root:/bin/bash\ncore:x:500:500:CoreOS Admin:/home/core:/bin/bash\nsystemd-coredump:x:998:998:systemd Core Dumper:/:/sbin/nologin\nfleet:x:253:253::/:/sbin/nologin\ntest:x:1000:1000::/home/test:/bin/bash\njenkins:x:1020:1020::/home/jenkins:/bin/bash\n"},
+		},
+		{
+			Name:     "shadow",
+			Path:     "etc",
+			Contents: []string{"root:*:15887:0:::::\ncore:*:15887:0:::::\nsystemd-coredump:!!:17301::::::\nfleet:!!:17301::::::\ntest:zJW/EKqqIk44o:17331:0:99999:7:::\njenkins:*:17331:0:99999:7:::\n"},
+		},
+		{
+			Name:     "authorized_keys",
+			Path:     "home/test/.ssh",
+			Contents: []string{"ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABAQDBRZPFJNOvQRfokigTtl0IBi71LHZrFOk4EJ3Zowtk/bX5uIVai0Cd4+hqlocYL10idgtFBH28skeKfsmHwgS9XwOvP+g+kqAl7yCz8JEzIUzl1fxNZDToi0jA3B5MwXkpt+IWfnabwi2cRZhlzrz9rO+eExu5s3NfaRmmmCYrjCJIRPKSCrW8U0n9fVSbX4PDdMXVmH7r+t8MtR8523vCbakFR/Y0YIqkPVdfuUXHh9rDCdH4B7mt7nYX2LWQXGUvmI13mgQoy04ifkaR3ImuOMp3Y1J1gm6clO74IMCq/sK9+XJhbxMPPHUoUJ2EwbaG7Dbh3iqz47e9oVki4gIH stephenlowrie@localhost.localdomain\n\n"},
 		},
 	}
 
@@ -452,15 +462,30 @@ func TestIgnitionBlackBox(t *testing.T) {
 }
 
 func PreCleanup(t *testing.T) {
+	err := os.Remove("/sysroot")
+	if err != nil {
+		t.Log(err)
+	}
+
 	mountpoints, _ := exec.Command("findmnt", "-l", "-o", "target").CombinedOutput()
 	points := strings.Split(string(mountpoints), "\n")
 	for i := len(points) - 1; i >= 0; i-- {
-		for _, pat := range []string{"/tmp/hd1p*", "/tmp/hd1p*/*"} {
+		for _, pat := range []string{"/tmp/hd1p*/*", "/tmp/hd1p*"} {
 			match, err := filepath.Match(pat, points[i])
 			if err != nil {
 				t.Log(err)
 			}
 			if match {
+				if strings.Contains(points[i], "usr") {
+					err = os.Remove(filepath.Join(strings.Trim(points[i], "/usr"), "lib64"))
+					if err != nil {
+						t.Log(err)
+					}
+					err = os.Remove(filepath.Join(strings.Trim(points[i], "/usr"), "lib"))
+					if err != nil {
+						t.Log(err)
+					}
+				}
 				_, _ = exec.Command("umount", points[i]).CombinedOutput()
 			}
 		}
@@ -532,53 +557,26 @@ func copyIdToRootPartition(t *testing.T, partitions []*Partition) {
 	for _, p := range partitions {
 		if p.Label == "ROOT" {
 			_ = os.MkdirAll(strings.Join([]string{p.MountPath, "home"}, "/"), 0755)
-			_ = os.MkdirAll(strings.Join([]string{p.MountPath, "lib64"}, "/"), 0755)
 			_ = os.MkdirAll(strings.Join([]string{p.MountPath, "var/log"}, "/"), 0755)
 			_ = os.MkdirAll(strings.Join([]string{p.MountPath, "sbin"}, "/"), 0755)
 			_ = os.MkdirAll(strings.Join([]string{p.MountPath, "bin"}, "/"), 0755)
 			_ = os.MkdirAll(strings.Join([]string{p.MountPath, "etc/default"}, "/"), 0755)
 			_ = os.MkdirAll(strings.Join([]string{p.MountPath, "proc/self"}, "/"), 0755)
 			_ = os.MkdirAll(strings.Join([]string{p.MountPath, "proc/sys/kernel"}, "/"), 0755)
-			_ = os.MkdirAll(strings.Join([]string{p.MountPath, "usr/share/baselayout"}, "/"), 0755)
-			_, _ = exec.Command("cp", "/lib64/libselinux.so.1", strings.Join([]string{p.MountPath, "lib64"}, "/")).CombinedOutput()
-			_, _ = exec.Command("cp", "/lib64/libc.so.6", strings.Join([]string{p.MountPath, "lib64"}, "/")).CombinedOutput()
-			_, _ = exec.Command("cp", "/lib64/libdl.so.2", strings.Join([]string{p.MountPath, "lib64"}, "/")).CombinedOutput()
-			_, _ = exec.Command("cp", "/lib64/libpcre.so.1", strings.Join([]string{p.MountPath, "lib64"}, "/")).CombinedOutput()
-			_, _ = exec.Command("cp", "/lib64/ld-linux-x86-64.so.2", strings.Join([]string{p.MountPath, "lib64"}, "/")).CombinedOutput()
-			_, _ = exec.Command("cp", "/lib64/libpthread.so.0", strings.Join([]string{p.MountPath, "lib64"}, "/")).CombinedOutput()
-			_, _ = exec.Command("cp", "/lib64/libaudit-vdso.so.1", strings.Join([]string{p.MountPath, "lib64"}, "/")).CombinedOutput()
-			_, _ = exec.Command("cp", "/lib64/libselinux.so.1", strings.Join([]string{p.MountPath, "lib64"}, "/")).CombinedOutput()
-			_, _ = exec.Command("cp", "/lib64/libsemanage.so.1", strings.Join([]string{p.MountPath, "lib64"}, "/")).CombinedOutput()
-			_, _ = exec.Command("cp", "/lib64/libacl.so.1", strings.Join([]string{p.MountPath, "lib64"}, "/")).CombinedOutput()
-			_, _ = exec.Command("cp", "/lib64/libattr.so.1", strings.Join([]string{p.MountPath, "lib64"}, "/")).CombinedOutput()
-			_, _ = exec.Command("cp", "/lib64/libcap-ng.so.0", strings.Join([]string{p.MountPath, "lib64"}, "/")).CombinedOutput()
-			_, _ = exec.Command("cp", "/lib64/libsepol.so.1", strings.Join([]string{p.MountPath, "lib64"}, "/")).CombinedOutput()
-			_, _ = exec.Command("cp", "/lib64/libbz2.so.1", strings.Join([]string{p.MountPath, "lib64"}, "/")).CombinedOutput()
-			_, _ = exec.Command("cp", "/lib64/libustr-1.0.so.1", strings.Join([]string{p.MountPath, "lib64"}, "/")).CombinedOutput()
-			_, _ = exec.Command("cp", "/lib64/libpthread.so.0", strings.Join([]string{p.MountPath, "lib64"}, "/")).CombinedOutput()
-			_, _ = exec.Command("cp", "/lib64/libnss_files.so.2", strings.Join([]string{p.MountPath, "lib64"}, "/")).CombinedOutput()
-			_, _ = exec.Command("cp", "/lib64/libtinfo.so.6", strings.Join([]string{p.MountPath, "lib64"}, "/")).CombinedOutput()
+			_ = os.Symlink(p.MountPath, "/sysroot")
+			_ = os.Symlink(filepath.Join("/usr", "lib64"), filepath.Join(p.MountPath, "lib64"))
+			_ = os.Symlink(filepath.Join("/usr", "lib"), filepath.Join(p.MountPath, "lib"))
 			_, _ = exec.Command("cp", "/etc/ld.so.cache", strings.Join([]string{p.MountPath, "etc"}, "/")).CombinedOutput()
 			_, _ = exec.Command("cp", "/etc/login.defs", strings.Join([]string{p.MountPath, "etc"}, "/")).CombinedOutput()
 			_, _ = exec.Command("cp", "/etc/nsswitch.conf", strings.Join([]string{p.MountPath, "etc"}, "/")).CombinedOutput()
 			_, _ = exec.Command("cp", "/etc/passwd", strings.Join([]string{p.MountPath, "etc"}, "/")).CombinedOutput()
 			_, _ = exec.Command("cp", "/etc/group", strings.Join([]string{p.MountPath, "etc"}, "/")).CombinedOutput()
+			_, _ = exec.Command("cp", "/etc/shadow", strings.Join([]string{p.MountPath, "etc"}, "/")).CombinedOutput()
+			_, _ = exec.Command("cp", "/etc/gshadow", strings.Join([]string{p.MountPath, "etc"}, "/")).CombinedOutput()
 			_, _ = exec.Command("cp", "/etc/default/useradd", strings.Join([]string{p.MountPath, "etc/default"}, "/")).CombinedOutput()
 			_, _ = exec.Command("cp", "/sbin/useradd", strings.Join([]string{p.MountPath, "sbin"}, "/")).CombinedOutput()
 			_, _ = exec.Command("cp", "/bin/id", strings.Join([]string{p.MountPath, "bin"}, "/")).CombinedOutput()
 			_, _ = exec.Command("cp", "/bin/bash", strings.Join([]string{p.MountPath, "bin"}, "/")).CombinedOutput()
-			out, err := exec.Command("cp", "/usr/share/baselayout/group", strings.Join([]string{p.MountPath, "usr/share/baselayout"}, "/")).CombinedOutput()
-			if err != nil {
-				t.Log(err, string(out))
-			}
-			out, err = exec.Command("cp", "/usr/share/baselayout/passwd", strings.Join([]string{p.MountPath, "usr/share/baselayout"}, "/")).CombinedOutput()
-			if err != nil {
-				t.Log(err, string(out))
-			}
-			out, err = exec.Command("cp", "/usr/share/baselayout/nsswitch.conf", strings.Join([]string{p.MountPath, "usr/share/baselayout"}, "/")).CombinedOutput()
-			if err != nil {
-				t.Log(err, string(out))
-			}
 		}
 	}
 }
@@ -1004,6 +1002,21 @@ func unmountRootPartition(t *testing.T, partitions []*Partition) {
 		if partition.Label != "ROOT" {
 			continue
 		}
+
+		// Remove symlinks
+		err := os.Remove("/sysroot")
+		if err != nil {
+			t.Log(err)
+		}
+		err = os.Remove(filepath.Join(partition.MountPath, "lib64"))
+		if err != nil {
+			t.Log(err)
+		}
+		err = os.Remove(filepath.Join(partition.MountPath, "lib"))
+		if err != nil {
+			t.Log(err)
+		}
+
 		umountUsr, err := exec.Command(
 			"/bin/umount", filepath.Join(partition.MountPath, "usr")).CombinedOutput()
 		if err != nil {
@@ -1130,7 +1143,7 @@ func validateFiles(t *testing.T, expected []*Partition) {
 			if file.Mode != "" {
 				sout, err := exec.Command(
 					"stat", "-c", "%a", path).CombinedOutput()
-				statOut := string(sout)
+				statOut := strings.TrimSpace(string(sout))
 				if err != nil {
 					t.Fatal(err)
 				}
