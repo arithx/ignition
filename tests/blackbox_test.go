@@ -438,6 +438,16 @@ func createTests() []Test {
 			Path:     "etc",
 			Contents: []string{"root:*:15887:0:::::\ncore:*:15887:0:::::\nsystemd-coredump:!!:17301::::::\nfleet:!!:17301::::::\n"},
 		},
+		{
+			Name:     "group",
+			Path:     "etc",
+			Contents: []string{"wheel:x:10:root,core\nsudo:x:150:\ndocker:x:233:core\nsystemd-coredump:x:998:\nfleet:x:253:core\nrkt-admin:x:999:\nrkt:x:251:core\n"},
+		},
+		{
+			Name:     "gshadow",
+			Path:     "etc",
+			Contents: []string{"wheel:*::root,core\nsudo:*::\ndocker:*::core\nsystemd-coredump:!!::\nfleet:!!::core\nrkt-admin:!!::\nrkt:!!::core\n"},
+		},
 	}
 	out[8].Files = []File{
 		{
@@ -581,8 +591,6 @@ func copyIdToRootPartition(t *testing.T, partitions []*Partition) {
 			_, _ = exec.Command("cp", "/etc/ld.so.cache", strings.Join([]string{p.MountPath, "etc"}, "/")).CombinedOutput()
 			_, _ = exec.Command("cp", "/etc/login.defs", strings.Join([]string{p.MountPath, "etc"}, "/")).CombinedOutput()
 			_, _ = exec.Command("cp", "/etc/nsswitch.conf", strings.Join([]string{p.MountPath, "etc"}, "/")).CombinedOutput()
-			_, _ = exec.Command("cp", "/etc/group", strings.Join([]string{p.MountPath, "etc"}, "/")).CombinedOutput()
-			_, _ = exec.Command("cp", "/etc/gshadow", strings.Join([]string{p.MountPath, "etc"}, "/")).CombinedOutput()
 			_, _ = exec.Command("cp", "/etc/default/useradd", strings.Join([]string{p.MountPath, "etc/default"}, "/")).CombinedOutput()
 			_, _ = exec.Command("cp", "/sbin/useradd", strings.Join([]string{p.MountPath, "sbin"}, "/")).CombinedOutput()
 			_, _ = exec.Command("cp", "/bin/id", strings.Join([]string{p.MountPath, "bin"}, "/")).CombinedOutput()
