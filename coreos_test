@@ -3,17 +3,15 @@
 cleanup()
 {
     if [ "$(cat /proc/mounts | grep /mnt/hd)" != "" ]; then
-        find /mnt/hd* | xargs umount
-    fi
-
-    if [ ! $(ls /mnt/hd* 1> /dev/null 2>&1;) ]; then
-        rm -rf /mnt/hd1*
+        find /tmp/hd* | xargs umount
     fi
 
     if [ ! -d "test.img" ]; then
         rm -rf test.img
     fi
 }
+
+ls /sysroot
 
 # Run cleanup in case a previous run left the system unclean
 cleanup
@@ -27,7 +25,7 @@ echo $OUT
 cleanup
 
 if [ "$OUT" == *"FAIL"* ]; then
-    return 1
+    exit 1
 fi
 
 journalctl -t ignition --all --priority=7 --no-pager -n 100
