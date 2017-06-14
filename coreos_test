@@ -25,5 +25,3 @@ cleanup
 if [ "${OUT#*FAIL}" != "$OUT" ]; then
     exit 1
 fi
-
-journalctl -t ignition --all --priority=7 --no-pager -n 100
