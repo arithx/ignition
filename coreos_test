@@ -2,6 +2,8 @@
 
 cleanup()
 {
+    rm -rf /sysroot
+
     if [ "$(cat /proc/mounts | grep /mnt/hd)" != "" ]; then
         find /tmp/hd* | xargs umount
     fi
@@ -10,8 +12,6 @@ cleanup()
         rm -rf test.img
     fi
 }
-
-ls /sysroot
 
 # Run cleanup in case a previous run left the system unclean
 cleanup
