@@ -3,6 +3,10 @@ package main
 import (
 	"flag"
 	"fmt"
+	"io/ioutil"
+	"os"
+	"strconv"
+	"strings"
 )
 
 var (
@@ -30,26 +34,126 @@ func main() {
 	flag.BoolVar(&flagSystem, "--system", false, "Create a system account")
 	flag.BoolVar(&flagNoLogInit, "--no-log-init", false, "Do not add the user to the lastlog and faillog databases")
 	flag.StringVar(&flagPassword, "password", "", "The encrypted password, as returned by crypt")
-	flag.IntVar(&flagUid, "uid", 0, "The numerical value of the user's ID")
+	flag.IntVar(&flagUid, "uid", -1, "The numerical value of the user's ID")
 	flag.StringVar(&flagComment, "comment", "", "Any text string. It is generally a short description of the login, and is currently used as the field for the user's full name.")
-	flag.IntVar(&flagGid, "gid", 0, "The group name or number of the user's initial login group")
+	flag.IntVar(&flagGid, "gid", -1, "The group name or number of the user's initial login group")
 	flag.StringVar(&flagGroups, "groups", "", "A list of supplementary groups which the user is also a member of")
 	flag.StringVar(&flagShell, "shell", "", "The name of the user's login shell")
 
 	flag.Parse()
 
-	fmt.Printf("stub for useradd call with the following arguments:\n")
-	fmt.Printf("--root=%s\n", flagRoot)
-	fmt.Printf("--uid=%d\n", flagUid)
-	fmt.Printf("--gid=%d\n", flagGid)
-	fmt.Printf("--password=%s\n", flagPassword)
-	fmt.Printf("--home-dir=%s\n", flagHomeDir)
-	fmt.Printf("--create-home=%t\n", flagCreateHome)
-	fmt.Printf("--no-create-home=%t\n", flagNoCreateHome)
-	fmt.Printf("--no-user-group=%t\n", flagNoUserGroup)
-	fmt.Printf("--system=%t\n", flagSystem)
-	fmt.Printf("--no-log-init=%t\n", flagNoLogInit)
-	fmt.Printf("--comment=%s\n", flagComment)
-	fmt.Printf("--groups=%s\n", flagGroups)
-	fmt.Printf("--shell=%s\n", flagShell)
+	if len(flag.Args()) != 1 {
+		fmt.Printf("incorrectly called\n")
+		os.Exit(1)
+	}
+
+	username := flag.Args()[0]
+
+	var uidGid int
+	if flagUid == -1 || flagGid == -1 {
+		var err error
+		uidGid, err = getNextUidAndGid()
+		if err != nil {
+			fmt.Printf("error getting next uid/gid: %v\n", err)
+			os.Exit(1)
+		}
+	}
+	if flagUid == -1 {
+		flagUid = uidGid
+	}
+	if flagGid == -1 {
+		flagGid = uidGid
+	}
+	if flagHomeDir == "" {
+		flagHomeDir = "/home/" + username
+	}
+	if flagShell == "" {
+		flagShell = "/bin/bash"
+	}
+
+	passwdLine := fmt.Sprintf("%s:x:%d:%d:%s:%s:%s\n", username, flagUid, flagGid, flagComment, flagHomeDir, flagShell)
+
+	passwdFile, err := os.OpenFile("/etc/passwd", os.O_APPEND, 0644)
+	if err != nil {
+		fmt.Printf("couldn't open passwd file: %v\n", err)
+		os.Exit(1)
+	}
+	defer passwdFile.Close()
+	_, err = passwdFile.Write([]byte(passwdLine))
+	if err != nil {
+		fmt.Printf("couldn't write to passwd file: %v\n", err)
+		os.Exit(1)
+	}
+
+	groupLine := fmt.Sprintf("%s:x:%d:\n", username, flagGid)
+
+	groupFile, err := os.OpenFile("/etc/group", os.O_APPEND, 0644)
+	if err != nil {
+		fmt.Printf("couldn't open group file: %v\n", err)
+		os.Exit(1)
+	}
+	defer groupFile.Close()
+	_, err = groupFile.Write([]byte(groupLine))
+	if err != nil {
+		fmt.Printf("couldn't write to group file: %v\n", err)
+		os.Exit(1)
+	}
+}
+
+// getNextUidAndGid finds the next available uid/gid pair starting at 500. It
+// returns an int that is both an available uid and an available gid.
+func getNextUidAndGid() (int, error) {
+	uidMap := make(map[int]struct{})
+	gidMap := make(map[int]struct{})
+
+	passwdContents, err := ioutil.ReadFile("/etc/passwd")
+	if err != nil {
+		return -1, err
+	}
+	passwdLines := strings.Split(string(passwdContents), "\n")
+	for i, l := range passwdLines {
+		if i == len(passwdLines)-1 {
+			// the last line is empty
+			break
+		}
+		// Will panic due to out of bounds if /etc/passwd is malformed
+		tokens := strings.Split(l, ":")
+		uid, err := strconv.ParseInt(tokens[2], 10, 64)
+		if err != nil {
+			return -1, err
+		}
+		gid, err := strconv.ParseInt(tokens[3], 10, 64)
+		if err != nil {
+			return -1, err
+		}
+		uidMap[int(uid)] = struct{}{}
+		gidMap[int(gid)] = struct{}{}
+	}
+
+	groupContents, err := ioutil.ReadFile("/etc/group")
+	if err != nil {
+		return -1, err
+	}
+	groupLines := strings.Split(string(groupContents), "\n")
+	for i, l := range groupLines {
+		if i == len(groupLines)-1 {
+			// the last line is empty
+			break
+		}
+		// Will panic due to out of bounds if /etc/group is malformed
+		tokens := strings.Split(l, ":")
+		gid, err := strconv.ParseInt(tokens[2], 10, 64)
+		if err != nil {
+			return -1, err
+		}
+		gidMap[int(gid)] = struct{}{}
+	}
+	for i := 1000; i < 65534; i++ {
+		_, ok1 := uidMap[i]
+		_, ok2 := gidMap[i]
+		if !ok1 && !ok2 {
+			return i, nil
+		}
+	}
+	return -1, fmt.Errorf("out of uid/gids")
 }
