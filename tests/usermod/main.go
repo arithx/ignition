@@ -5,6 +5,8 @@ import (
 	"fmt"
 	"io/ioutil"
 	"os"
+	"path"
+	"strconv"
 	"strings"
 )
 
@@ -22,7 +24,7 @@ var (
 )
 
 func main() {
-	flag.StringVar(&flagRoot, "root", "", "Apply changes in the CHROOT_DIR directory and use the configuration files from the CHROOT_DIR directory")
+	flag.StringVar(&flagRoot, "root", "/", "Apply changes in the CHROOT_DIR directory and use the configuration files from the CHROOT_DIR directory")
 	flag.StringVar(&flagHome, "home-dir", "", "The new user will be created using HOME_DIR as the value for the user's login directory")
 	flag.BoolVar(&flagMoveHome, "move-home", false, "Move the content of the user's home directory to the new location")
 	flag.BoolVar(&flagNoUserGroup, "no-user-group", false, "Do not create a group with the same name as the user")
@@ -42,33 +44,38 @@ func main() {
 
 	username := flag.Args()[0]
 
-	passwdContents, err := ioutil.ReadFile("/etc/passwd")
+	passwdContents, err := ioutil.ReadFile(path.Join(flagRoot, "/etc/passwd"))
 	if err != nil {
 		fmt.Printf("couldn't open /etc/passwd: %v\n", err)
 		os.Exit(1)
 	}
 	passwdLines := strings.Split(string(passwdContents), "\n")
 	for i, l := range passwdLines {
-		var currUser, currComment, currHome, currShell string
-		var currUid, currGid int
-		n, err := fmt.Sscanf(l, "%s:x:%d:%d:%s:%s:%s", &currUser, &currUid, &currGid, &currComment, &currHome, &currShell)
-		if err != nil {
-			fmt.Printf("couldn't parse line %q from /etc/passwd: %v\n", l, err)
+		if i == len(passwdLines)-1 {
+			// The last line is empty
+			break
+		}
+		tokens := strings.Split(l, ":")
+		if len(tokens) != 7 {
+			fmt.Printf("scanned incorrect number of items: %d\n", len(tokens))
 			os.Exit(1)
 		}
-		if n != 6 {
-			fmt.Printf("scanned incorrect number of items: %d\n", n)
-			os.Exit(1)
-		}
+		currUser := tokens[0]
+		currUid := tokens[2]
+		currGid := tokens[3]
+		currComment := tokens[4]
+		currHome := tokens[5]
+		currShell := tokens[6]
+
 		if currUser != username {
 			continue
 		}
 
 		if flagUid != -1 {
-			currUid = flagUid
+			currUid = strconv.Itoa(flagUid)
 		}
 		if flagGid != -1 {
-			currGid = flagGid
+			currGid = strconv.Itoa(flagGid)
 		}
 		if flagComment != "" {
 			currComment = flagComment
@@ -80,18 +87,18 @@ func main() {
 			currShell = flagShell
 		}
 
-		newPasswdLine := fmt.Sprintf("%s:x:%d:%d:%s:%s:%s", currUser, currUid, currGid, currComment, currHome, currShell)
+		newPasswdLine := fmt.Sprintf("%s:x:%s:%s:%s:%s:%s", currUser, currUid, currGid, currComment, currHome, currShell)
 
 		passwdLines[i] = newPasswdLine
 	}
 
-	passwdFile, err := os.OpenFile("/etc/passwd", os.O_WRONLY|os.O_TRUNC, 0644)
+	passwdFile, err := os.OpenFile(path.Join(flagRoot, "/etc/passwd"), os.O_WRONLY|os.O_TRUNC, 0644)
 	if err != nil {
 		fmt.Printf("couldn't open passwd file: %v\n", err)
 		os.Exit(1)
 	}
 	defer passwdFile.Close()
-	_, err = passwdFile.Write([]byte(strings.Join(passwdLines, "\n") + "\n"))
+	_, err = passwdFile.Write([]byte(strings.Join(passwdLines, "\n")))
 	if err != nil {
 		fmt.Printf("couldn't write to passwd file: %v\n", err)
 		os.Exit(1)

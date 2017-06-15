@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"io/ioutil"
 	"os"
+	"path"
 	"strconv"
 	"strings"
 )
@@ -73,7 +74,7 @@ func main() {
 
 	passwdLine := fmt.Sprintf("%s:x:%d:%d:%s:%s:%s\n", username, flagUid, flagGid, flagComment, flagHomeDir, flagShell)
 
-	passwdFile, err := os.OpenFile("/etc/passwd", os.O_APPEND, 0644)
+	passwdFile, err := os.OpenFile(path.Join(flagRoot, "/etc/passwd"), os.O_APPEND|os.O_WRONLY, 0644)
 	if err != nil {
 		fmt.Printf("couldn't open passwd file: %v\n", err)
 		os.Exit(1)
@@ -87,7 +88,7 @@ func main() {
 
 	groupLine := fmt.Sprintf("%s:x:%d:\n", username, flagGid)
 
-	groupFile, err := os.OpenFile("/etc/group", os.O_APPEND, 0644)
+	groupFile, err := os.OpenFile(path.Join(flagRoot, "/etc/group"), os.O_APPEND|os.O_WRONLY, 0644)
 	if err != nil {
 		fmt.Printf("couldn't open group file: %v\n", err)
 		os.Exit(1)
@@ -106,7 +107,7 @@ func getNextUidAndGid() (int, error) {
 	uidMap := make(map[int]struct{})
 	gidMap := make(map[int]struct{})
 
-	passwdContents, err := ioutil.ReadFile("/etc/passwd")
+	passwdContents, err := ioutil.ReadFile(path.Join(flagRoot, "/etc/passwd"))
 	if err != nil {
 		return -1, err
 	}
@@ -130,7 +131,7 @@ func getNextUidAndGid() (int, error) {
 		gidMap[int(gid)] = struct{}{}
 	}
 
-	groupContents, err := ioutil.ReadFile("/etc/group")
+	groupContents, err := ioutil.ReadFile(path.Join(flagRoot, "/etc/group"))
 	if err != nil {
 		return -1, err
 	}
