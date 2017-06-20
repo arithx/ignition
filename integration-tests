@@ -1,0 +1,14 @@
+#!/bin/bash
+
+PATH=$PATH:$PWD/bin/amd64
+OUT=$(sudo -E PATH=$PATH find -name "*.test" -exec '{}' ';')
+echo $OUT
+
+# Clean up img before exit
+if [ ! -d "test.img" ]; then
+	rm -rf test.img
+fi
+
+if [ "${OUT#*FAIL}" != "$OUT" ]; then
+	exit 1
+fi
