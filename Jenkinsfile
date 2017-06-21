@@ -23,6 +23,8 @@ sudo chmod +x docker_build
 sudo chmod +x test
 sudo chmod +x build
 sudo chmod +x ./coreos_test
+
+docker --version
 '''
                 withDockerContainer("docker pull quay.io/slowrie/ignition-builder-${GOVERSION}") {
                     sh '''#!/bin/bash
