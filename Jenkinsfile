@@ -22,12 +22,45 @@ def test_ignition(ARCH, GOVERSION)
 sudo chmod +x docker_build
 sudo chmod +x test
 sudo chmod +x build
+sudo chmod +x ./coreos_test
+'''
+                withDockerContainer("docker pull quay.io/slowrie/ignition-builder-${GOVERSION}") {
+                    sh '''#!/bin/bash
 
-sed -i "s/_GOVERSION_/$GOVERSION/g" Dockerfile
-docker build --rm --tag=test .
-docker run --rm -e TARGET=${GOARCH} -e GOARCH=${GOARCH} -e CGO_ENABLED=${CGO_ENABLED} --privileged -u "$(id -u):$(id -g)" -v /etc/passwd:/etc/passwd:ro -v /etc/group:/etc/group:ro -v "$PWD":/usr/src/myapp -w /usr/src/myapp test sudo -E "PATH=$PATH:/go/bin:/usr/local/go/bin" ./docker_build
+if [ "${TARGET}" == "amd64" ]; then
+    export ACTION="COMPILE"
+    GOARCH="${TARGET}" ./test;
+elif [ "${TARGET}" == "arm64" ]; then
+    export CGO_LDFLAGS="-L ${PWD}";
+    GOARCH="${TARGET}" ./build;
+    file "bin/${TARGET}/ignition" | egrep 'aarch64';
+fi
+'''
+                }
 
-sudo chmod +x ./coreos_test; sudo -E ./coreos_test
+                sh '''#!/bin/bash -ex
+
+cleanup()
+{
+    if [ "$(cat /proc/mounts | grep /tmp/hd)" != "" ]; then
+        find /tmp/hd* | xargs umount
+    fi
+
+    if [ ! -d "test.img" ]; then
+        rm -rf test.img
+    fi
+}
+
+PATH=$PATH:$PWD/bin/amd64
+OUT=$(sudo -E PATH=$PATH find -name "*.test" -exec '{}' ';')
+echo $OUT
+
+# Run cleanup before potentially exiting
+cleanup
+
+if [ "${OUT#*FAIL}" != "$OUT" ]; then
+    exit 1
+fi
 '''
             }
         }
