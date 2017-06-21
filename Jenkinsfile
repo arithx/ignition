@@ -40,23 +40,9 @@ fi
 
                 sh '''#!/bin/bash -ex
 
-cleanup()
-{
-    if [ "$(cat /proc/mounts | grep /tmp/hd)" != "" ]; then
-        find /tmp/hd* | xargs umount
-    fi
-
-    if [ ! -d "test.img" ]; then
-        rm -rf test.img
-    fi
-}
-
 PATH=$PATH:$PWD/bin/amd64
 OUT=$(sudo -E PATH=$PATH find -name "*.test" -exec '{}' ';')
 echo $OUT
-
-# Run cleanup before potentially exiting
-cleanup
 
 if [ "${OUT#*FAIL}" != "$OUT" ]; then
     exit 1
