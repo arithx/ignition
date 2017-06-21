@@ -22,11 +22,9 @@ def test_ignition(ARCH, GOVERSION)
 sudo chmod +x docker_build
 sudo chmod +x test
 sudo chmod +x build
-sudo chmod +x ./coreos_test
-
-docker --version
+sudo chmod +x coreos_test
 '''
-                withDockerContainer("docker pull quay.io/slowrie/ignition-builder-${GOVERSION}") {
+                withDockerContainer("quay.io/slowrie/ignition-builder-${GOVERSION}") {
                     sh '''#!/bin/bash
 
 if [ "${TARGET}" == "amd64" ]; then
