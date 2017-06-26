@@ -26,7 +26,7 @@ sudo chmod +x integration-tests
                 withDockerContainer("quay.io/coreos/ignition-builder-$GOVERSION") {
                     sh '''#!/bin/bash
 
-ls
+find . -name "*.test" -delete
 
 if [ "${TARGET}" == "amd64" ]; then
     export ACTION="COMPILE"
