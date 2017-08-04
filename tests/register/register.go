@@ -12,31 +12,25 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package storage
+package register
 
 import (
-	"github.com/coreos/ignition/tests/register"
 	"github.com/coreos/ignition/tests/types"
 )
 
+type TestType int
+
+const (
+	NegativeTest TestType = iota
+	PositiveTest
+)
+
+var Tests map[TestType][]types.Test
+
 func init() {
-	register.Register(register.NegativeTest, InvalidFilesystem())
+	Tests = make(map[TestType][]types.Test)
 }
 
-func InvalidFilesystem() types.Test {
-	name := "Invalid Filesystem"
-	in := types.GetBaseDisk()
-	out := in
-	var mntDevices []types.MntDevice
-	config := `{
-		"ignition": {"version": "2.0.0"},
-		"storage": {
-			"files": [{
-				"filesystem": "NotARealFilesystem",
-				"path": "/ignition/test",
-				"contents": {"source": "data:,asdf"}
-			}]}
-	}`
-
-	return types.Test{name, in, out, mntDevices, config}
+func Register(tType TestType, t types.Test) {
+	Tests[tType] = append(Tests[tType], t)
 }

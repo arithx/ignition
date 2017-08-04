@@ -15,8 +15,14 @@
 package regression
 
 import (
+	"github.com/coreos/ignition/tests/register"
 	"github.com/coreos/ignition/tests/types"
 )
+
+func init() {
+	register.Register(register.PositiveTest, EquivalentFilesystemUUIDsTreatedDistinctEXT4())
+	register.Register(register.PositiveTest, EquivalentFilesystemUUIDsTreatedDistinctVFAT())
+}
 
 func EquivalentFilesystemUUIDsTreatedDistinctEXT4() types.Test {
 	// Originally found in https://github.com/coreos/bugs/issues/2064
@@ -43,6 +49,8 @@ func EquivalentFilesystemUUIDsTreatedDistinctEXT4() types.Test {
 		    ]
 		  }
 		}`
+	in[0].Partitions.GetPartition("EFI-SYSTEM").FilesystemType = "ext4"
+	out[0].Partitions.GetPartition("EFI-SYSTEM").FilesystemType = "ext4"
 	in[0].Partitions.GetPartition("EFI-SYSTEM").FilesystemUUID = "6ABE925E-6DAF-4FAD-BC09-8D56BE8822DE"
 	out[0].Partitions.GetPartition("EFI-SYSTEM").FilesystemUUID = "6ABE925E-6DAF-4FAD-BC09-8D56BE8822DE"
 
@@ -75,7 +83,6 @@ func EquivalentFilesystemUUIDsTreatedDistinctVFAT() types.Test {
 		  }
 		}`
 	in[0].Partitions.GetPartition("EFI-SYSTEM").FilesystemUUID = "2e24ec82"
-	in[0].Partitions.GetPartition("EFI-SYSTEM").FilesystemType = "vfat"
 	out[0].Partitions.GetPartition("EFI-SYSTEM").FilesystemUUID = "2e24ec82"
 	out[0].Partitions.GetPartition("EFI-SYSTEM").FilesystemType = "vfat"
 

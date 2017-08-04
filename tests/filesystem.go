@@ -125,12 +125,14 @@ func removeMountFolders(t *testing.T, partitions []*types.Partition) {
 
 // returns true if no error, false if error
 func runIgnition(t *testing.T, stage, root, configDir string, expectFail bool) bool {
-	args := []string{"ignition", "-clear-cache", "-oem", "file", "-stage", stage, "-root", root}
-	cmd := exec.Command(args...)
-	t.Log(args)
+	args := []string{"-clear-cache", "-oem", "file", "-stage", stage, "-root", root}
+	cmd := exec.Command("ignition", args...)
+	t.Log("ignition", args)
 	cmd.Dir = configDir
 	out, err := cmd.CombinedOutput()
 	if err != nil && !expectFail {
+		fmt.Println("Ignition failed")
+		bufio.NewReader(os.Stdin).ReadBytes('\n')
 		t.Fatal(args, err, string(out))
 	}
 	return err == nil
@@ -257,7 +259,8 @@ func formatPartition(t *testing.T, partition *types.Partition) {
 		mkfs = "mke2fs"
 		opts = []string{
 			"-t", partition.FilesystemType, "-b", "4096",
-			"-i", "4096", "-I", "128", "-e"}
+			"-i", "4096", "-I", "128", "-e", "remount-ro",
+		}
 
 		if partition.FilesystemLabel != "" {
 			label = []string{"-L", partition.FilesystemLabel}
@@ -304,12 +307,12 @@ func formatPartition(t *testing.T, partition *types.Partition) {
 
 	_ = mustRun(t, mkfs, opts...)
 
-	if []string{"ext2", "ext4"}.Contains(partition.FilesystemType) && partition.TypeCode == "coreos-usr" {
+	if (partition.FilesystemType == "ext2" || partition.FilesystemType == "ext4") && partition.TypeCode == "coreos-usr" {
 		opts := []string{
 			"-U", "clear", "-T", "20091119110000", "-c", "0", "-i", "0",
-			"-m", "0", "-r", "0", "remount-ro", partition.Device,
+			"-m", "0", "-r", "0", "-e", "remount-ro", partition.Device,
 		}
-		_ := mustRun(t, "tune2fs", opts...)
+		_ = mustRun(t, "tune2fs", opts...)
 	}
 }
 
@@ -405,11 +408,8 @@ func mountPartitions(t *testing.T, partitions []*types.Partition) {
 		if partition.FilesystemType == "" || partition.Label == "ROOT" {
 			continue
 		}
-		args := []string{"mount", partition.Device, partition.MountPath}
-		mountOut, err := exec.Command(args...).CombinedOutput()
-		if err != nil {
-			t.Fatal(args, err, string(mountOut))
-		}
+		args := []string{partition.Device, partition.MountPath}
+		_ = mustRun(t, "mount", args...)
 	}
 }
 
@@ -453,7 +453,7 @@ func removeEmpty(strings []string) []string {
 }
 
 func generateUUID(t *testing.T) string {
-	out := mustRun("uuidgen")
+	out := mustRun(t, "uuidgen")
 	return strings.TrimSpace(string(out))
 }
 
@@ -474,7 +474,7 @@ func createFiles(t *testing.T, partitions []*types.Partition) {
 				t.Fatal("create", err, f)
 			}
 			defer f.Close()
-			if file.Contents != nil {
+			if file.Contents != "" {
 				writer := bufio.NewWriter(f)
 				writeStringOut, err := writer.WriteString(file.Contents)
 				if err != nil {
@@ -492,7 +492,7 @@ func unmountRootPartition(t *testing.T, partitions []*types.Partition) {
 			continue
 		}
 
-		_ = mustRun("umount", partition.Device)
+		_ = mustRun(t, "umount", partition.Device)
 	}
 }
 
@@ -502,7 +502,7 @@ func unmountPartitions(t *testing.T, partitions []*types.Partition) {
 			continue
 		}
 
-		_ = mustRun("umount", partition.Device)
+		_ = mustRun(t, "umount", partition.Device)
 	}
 }
 

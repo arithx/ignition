@@ -15,8 +15,14 @@
 package systemd
 
 import (
+	"github.com/coreos/ignition/tests/register"
 	"github.com/coreos/ignition/tests/types"
 )
+
+func init() {
+	register.Register(register.PositiveTest, ModifySystemdService())
+	register.Register(register.PositiveTest, MaskSystemdServices())
+}
 
 func ModifySystemdService() types.Test {
 	name := "Modify Services"
@@ -41,7 +47,7 @@ func ModifySystemdService() types.Test {
 				Name: "debug.conf",
 				Path: "etc/systemd/system/systemd-networkd.service.d",
 			},
-			Contents: []string{"[Service]\nEnvironment=SYSTEMD_LOG_LEVEL=debug"},
+			Contents: "[Service]\nEnvironment=SYSTEMD_LOG_LEVEL=debug",
 		},
 	})
 

@@ -15,8 +15,17 @@
 package files
 
 import (
+	"github.com/coreos/ignition/tests/register"
 	"github.com/coreos/ignition/tests/types"
 )
+
+func init() {
+	register.Register(register.PositiveTest, CreateFileOnRoot())
+	register.Register(register.PositiveTest, UserGroupByID_2_0_0())
+	register.Register(register.PositiveTest, UserGroupByID_2_1_0())
+	// TODO: Investigate why ignition's C code hates our environment
+	// register.Register(register.PositiveTest, UserGroupByName_2_1_0())
+}
 
 func CreateFileOnRoot() types.Test {
 	name := "Create Files on the Root Filesystem"
@@ -39,7 +48,7 @@ func CreateFileOnRoot() types.Test {
 				Name: "bar",
 				Path: "foo",
 			},
-			Contents: []string{"example file\n"},
+			Contents: "example file\n",
 		},
 	})
 
@@ -71,7 +80,7 @@ func UserGroupByID_2_0_0() types.Test {
 				User:  500,
 				Group: 500,
 			},
-			Contents: []string{"example file\n"},
+			Contents: "example file\n",
 		},
 	})
 
@@ -103,7 +112,7 @@ func UserGroupByID_2_1_0() types.Test {
 				User:  500,
 				Group: 500,
 			},
-			Contents: []string{"example file\n"},
+			Contents: "example file\n",
 		},
 	})
 
@@ -135,7 +144,7 @@ func UserGroupByName_2_1_0() types.Test {
 				User:  500,
 				Group: 500,
 			},
-			Contents: []string{"example file\n"},
+			Contents: "example file\n",
 		},
 	})
 

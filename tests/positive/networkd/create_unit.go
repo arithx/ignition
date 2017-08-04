@@ -15,8 +15,13 @@
 package networkd
 
 import (
+	"github.com/coreos/ignition/tests/register"
 	"github.com/coreos/ignition/tests/types"
 )
+
+func init() {
+	register.Register(register.PositiveTest, CreateNetworkdUnit())
+}
 
 func CreateNetworkdUnit() types.Test {
 	name := "Create a networkd unit"
@@ -38,7 +43,7 @@ func CreateNetworkdUnit() types.Test {
 				Name: "static.network",
 				Path: "etc/systemd/network",
 			},
-			Contents: []string{"[Match]\nName=enp2s0\n\n[Network]\nAddress=192.168.0.15/24\nGateway=192.168.0.1\n"},
+			Contents: "[Match]\nName=enp2s0\n\n[Network]\nAddress=192.168.0.15/24\nGateway=192.168.0.1\n",
 		},
 	})
 

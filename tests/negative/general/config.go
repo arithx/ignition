@@ -15,8 +15,14 @@
 package general
 
 import (
+	"github.com/coreos/ignition/tests/register"
 	"github.com/coreos/ignition/tests/types"
 )
+
+func init() {
+	register.Register(register.NegativeTest, ReplaceConfigWithInvalidHash())
+	register.Register(register.NegativeTest, AppendConfigWithInvalidHash())
+}
 
 func ReplaceConfigWithInvalidHash() types.Test {
 	name := "Replace Config with Invalid Hash"

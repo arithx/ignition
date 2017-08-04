@@ -15,8 +15,13 @@
 package regression
 
 import (
+	"github.com/coreos/ignition/tests/register"
 	"github.com/coreos/ignition/tests/types"
 )
+
+func init() {
+	register.Register(register.NegativeTest, VFATIgnoresWipeFilesystem())
+}
 
 func VFATIgnoresWipeFilesystem() types.Test {
 	// Originally found in https://github.com/coreos/bugs/issues/2055

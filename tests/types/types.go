@@ -24,7 +24,7 @@ const (
 
 type File struct {
 	Node
-	Contents []string
+	Contents string
 	Mode     string
 }
 
@@ -133,13 +133,13 @@ func GetBaseDisk() []Disk {
 								Name: "multiLine",
 								Path: "path/example",
 							},
-							Contents: []string{"line 1", "line 2"},
+							Contents: "line 1\nline 2",
 						}, {
 							Node: Node{
 								Name: "singleLine",
 								Path: "another/path/example",
 							},
-							Contents: []string{"single line"},
+							Contents: "single line",
 						}, {
 							Node: Node{
 								Name: "emptyFile",

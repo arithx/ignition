@@ -15,8 +15,14 @@
 package files
 
 import (
+	"github.com/coreos/ignition/tests/register"
 	"github.com/coreos/ignition/tests/types"
 )
+
+func init() {
+	register.Register(register.NegativeTest, InvalidHash())
+	register.Register(register.NegativeTest, InvalidHashFromHTTPURL())
+}
 
 func InvalidHash() types.Test {
 	name := "Invalid File Hash"
@@ -75,7 +81,7 @@ func InvalidHashFromHTTPURL() types.Test {
 				Name: "bar",
 				Path: "foo",
 			},
-			Contents: []string{"asdf\nfdsa"},
+			Contents: "asdf\nfdsa",
 		},
 	})
 

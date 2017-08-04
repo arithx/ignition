@@ -15,8 +15,13 @@
 package files
 
 import (
+	"github.com/coreos/ignition/tests/register"
 	"github.com/coreos/ignition/tests/types"
 )
+
+func init() {
+	register.Register(register.PositiveTest, CreateDirectoryOnRoot())
+}
 
 func CreateDirectoryOnRoot() types.Test {
 	name := "Create a Directory on the Root Filesystem"

@@ -15,8 +15,14 @@
 package files
 
 import (
+	"github.com/coreos/ignition/tests/register"
 	"github.com/coreos/ignition/tests/types"
 )
+
+func init() {
+	register.Register(register.PositiveTest, ValidateFileHashFromDataURL())
+	register.Register(register.PositiveTest, ValidateFileHashFromHTTPURL())
+}
 
 func ValidateFileHashFromDataURL() types.Test {
 	name := "Validate File Hash from Data URL"
@@ -42,7 +48,7 @@ func ValidateFileHashFromDataURL() types.Test {
 				Name: "bar",
 				Path: "foo",
 			},
-			Contents: []string{"example file\n"},
+			Contents: "example file\n",
 		},
 	})
 
@@ -73,7 +79,7 @@ func ValidateFileHashFromHTTPURL() types.Test {
 				Name: "bar",
 				Path: "foo",
 			},
-			Contents: []string{"asdf\nfdsa"},
+			Contents: "asdf\nfdsa",
 		},
 	})
 

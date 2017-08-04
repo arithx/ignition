@@ -15,8 +15,16 @@
 package storage
 
 import (
+	"github.com/coreos/ignition/tests/register"
 	"github.com/coreos/ignition/tests/types"
 )
+
+func init() {
+	register.Register(register.NegativeTest, NoDevice())
+	register.Register(register.NegativeTest, NoDeviceWithForce())
+	register.Register(register.NegativeTest, NoDeviceWithWipeFilesystemTrue())
+	register.Register(register.NegativeTest, NoDeviceWithWipeFilesystemFalse())
+}
 
 func NoDevice() types.Test {
 	name := "No Device"
@@ -82,7 +90,7 @@ func NoDeviceWithWipeFilesystemTrue() types.Test {
 	return types.Test{name, in, out, mntDevices, config}
 }
 
-func No_device_with_wipe_filesystem_false() types.Test {
+func NoDeviceWithWipeFilesystemFalse() types.Test {
 	name := "No Device w/ wipeFilesystem false"
 	in := types.GetBaseDisk()
 	out := in

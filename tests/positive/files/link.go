@@ -15,8 +15,14 @@
 package files
 
 import (
+	"github.com/coreos/ignition/tests/register"
 	"github.com/coreos/ignition/tests/types"
 )
+
+func init() {
+	register.Register(register.PositiveTest, CreateHardLinkOnRoot())
+	register.Register(register.PositiveTest, CreateSymlinkOnRoot())
+}
 
 func CreateHardLinkOnRoot() types.Test {
 	name := "Create a Hard Link on the Root Filesystem"
@@ -47,7 +53,7 @@ func CreateHardLinkOnRoot() types.Test {
 				Path: "foo",
 				Name: "target",
 			},
-			Contents: []string{"asdf\nfdsa"},
+			Contents: "asdf\nfdsa",
 		},
 	})
 	out[0].Partitions.AddLinks("ROOT", []types.Link{

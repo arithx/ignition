@@ -15,8 +15,13 @@
 package general
 
 import (
+	"github.com/coreos/ignition/tests/register"
 	"github.com/coreos/ignition/tests/types"
 )
+
+func init() {
+	register.Register(register.NegativeTest, InvalidVersion())
+}
 
 func InvalidVersion() types.Test {
 	name := "Invalid Version"

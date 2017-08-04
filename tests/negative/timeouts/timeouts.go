@@ -20,8 +20,13 @@ import (
 	"net/http/httptest"
 	"time"
 
+	"github.com/coreos/ignition/tests/register"
 	"github.com/coreos/ignition/tests/types"
 )
+
+func init() {
+	register.Register(register.NegativeTest, DecreaseHTTPResponseHeadersTimeout())
+}
 
 var (
 	respondDelayServer = httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {

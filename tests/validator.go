@@ -141,8 +141,7 @@ func validateFile(t *testing.T, partition *types.Partition, file types.File) {
 		t.Errorf("Error stat'ing file %s: %v", path, err)
 		return
 	}
-	if file.Contents != nil {
-		expectedContents := strings.Join(file.Contents, "\n")
+	if file.Contents != "" {
 		dat, err := ioutil.ReadFile(path)
 		if err != nil {
 			t.Error("Error when reading file", path)
@@ -150,9 +149,9 @@ func validateFile(t *testing.T, partition *types.Partition, file types.File) {
 		}
 
 		actualContents := string(dat)
-		if expectedContents != actualContents {
+		if file.Contents != actualContents {
 			t.Error("Contents of file", path, "do not match!",
-				expectedContents, actualContents)
+				file.Contents, actualContents)
 		}
 	}
 
@@ -232,7 +231,7 @@ func validateMode(t *testing.T, path string, mode string) {
 		actualMode = actualMode[len(actualMode)-4:]
 
 		if mode != actualMode {
-			t.Error("Node Mode does not match", path, mode, statOut)
+			t.Error("Node Mode does not match", path, mode, actualMode)
 		}
 	}
 }

@@ -15,8 +15,15 @@
 package storage
 
 import (
+	"github.com/coreos/ignition/tests/register"
 	"github.com/coreos/ignition/tests/types"
 )
+
+func init() {
+	register.Register(register.PositiveTest, ForceNewFilesystemOfSameType())
+	register.Register(register.PositiveTest, WipeFilesystemWithSameType())
+	register.Register(register.PositiveTest, CreateNewPartitions())
+}
 
 func ForceNewFilesystemOfSameType() types.Test {
 	name := "Force new Filesystem Creation of same type"
@@ -86,6 +93,8 @@ func WipeFilesystemWithSameType() types.Test {
 			}
 	}`
 
+	in[0].Partitions.GetPartition("EFI-SYSTEM").FilesystemType = "ext4"
+	out[0].Partitions.GetPartition("EFI-SYSTEM").FilesystemType = "ext4"
 	out[0].Partitions.GetPartition("EFI-SYSTEM").Files = []types.File{}
 	out[0].Partitions.AddRemovedNodes("EFI-SYSTEM", []types.Node{
 		{

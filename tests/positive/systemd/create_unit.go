@@ -15,8 +15,13 @@
 package systemd
 
 import (
+	"github.com/coreos/ignition/tests/register"
 	"github.com/coreos/ignition/tests/types"
 )
+
+func init() {
+	register.Register(register.PositiveTest, CreateSystemdService())
+}
 
 func CreateSystemdService() types.Test {
 	name := "Create a systemd service"
@@ -39,14 +44,14 @@ func CreateSystemdService() types.Test {
 				Name: "example.service",
 				Path: "etc/systemd/system",
 			},
-			Contents: []string{"[Service]\nType=oneshot\nExecStart=/usr/bin/echo Hello World\n\n[Install]\nWantedBy=multi-user.target"},
+			Contents: "[Service]\nType=oneshot\nExecStart=/usr/bin/echo Hello World\n\n[Install]\nWantedBy=multi-user.target",
 		},
 		{
 			Node: types.Node{
 				Name: "20-ignition.preset",
 				Path: "etc/systemd/system-preset",
 			},
-			Contents: []string{"enable example.service", ""},
+			Contents: "enable example.service\n",
 		},
 	})
 

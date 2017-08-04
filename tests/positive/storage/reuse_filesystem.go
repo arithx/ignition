@@ -15,8 +15,13 @@
 package storage
 
 import (
+	"github.com/coreos/ignition/tests/register"
 	"github.com/coreos/ignition/tests/types"
 )
+
+func init() {
+	register.Register(register.PositiveTest, ReuseExistingFilesystem())
+}
 
 func ReuseExistingFilesystem() types.Test {
 	name := "Reuse Existing Filesystem"
@@ -60,7 +65,7 @@ func ReuseExistingFilesystem() types.Test {
 							Name: "bar",
 							Path: "foo",
 						},
-						Contents: []string{"example file\n"},
+						Contents: "example file\n",
 					},
 				},
 			},
@@ -82,7 +87,7 @@ func ReuseExistingFilesystem() types.Test {
 							Name: "bar",
 							Path: "foo",
 						},
-						Contents: []string{"example file\n"},
+						Contents: "example file\n",
 					},
 				},
 			},

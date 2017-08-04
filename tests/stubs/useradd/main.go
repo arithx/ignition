@@ -148,8 +148,7 @@ func main() {
 // getNextUidAndGid finds the next available uid/gid pair starting at 500. It
 // returns an int that is both an available uid and an available gid.
 func getNextUidAndGid() (int, error) {
-	uidMap := make(map[int]struct{})
-	gidMap := make(map[int]struct{})
+	idMap := make(map[int]struct{})
 
 	passwdContents, err := ioutil.ReadFile(path.Join(flagRoot, "/etc/passwd"))
 	if err != nil {
@@ -171,8 +170,8 @@ func getNextUidAndGid() (int, error) {
 		if err != nil {
 			return -1, err
 		}
-		uidMap[int(uid)] = struct{}{}
-		gidMap[int(gid)] = struct{}{}
+		idMap[int(uid)] = struct{}{}
+		idMap[int(gid)] = struct{}{}
 	}
 
 	groupContents, err := ioutil.ReadFile(path.Join(flagRoot, "/etc/group"))
@@ -191,12 +190,11 @@ func getNextUidAndGid() (int, error) {
 		if err != nil {
 			return -1, err
 		}
-		gidMap[int(gid)] = struct{}{}
+		idMap[int(gid)] = struct{}{}
 	}
 	for i := 1000; i < 65534; i++ {
-		_, ok1 := uidMap[i]
-		_, ok2 := gidMap[i]
-		if !ok1 && !ok2 {
+		_, ok := idMap[i]
+		if !ok {
 			return i, nil
 		}
 	}

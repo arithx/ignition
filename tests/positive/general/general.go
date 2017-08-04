@@ -15,8 +15,17 @@
 package general
 
 import (
+	"github.com/coreos/ignition/tests/register"
 	"github.com/coreos/ignition/tests/types"
 )
+
+func init() {
+	register.Register(register.PositiveTest, ReformatFilesystemAndWriteFile())
+	register.Register(register.PositiveTest, ReplaceConfigWithRemoteConfig())
+	register.Register(register.PositiveTest, AppendConfigWithRemoteConfig())
+	register.Register(register.PositiveTest, VersionOnlyConfig())
+	register.Register(register.PositiveTest, EmptyUserdata())
+}
 
 func ReformatFilesystemAndWriteFile() types.Test {
 	name := "Reformat Filesystem to ext4 & drop file in /ignition/test"
@@ -46,46 +55,16 @@ func ReformatFilesystemAndWriteFile() types.Test {
 			}]}
 	}`
 
-	in[0].Partitions.GetPartition("EFI-SYSTEM").FilesystemType = "ext2"
+	out[0].Partitions.GetPartition("EFI-SYSTEM").FilesystemType = "ext4"
 	out[0].Partitions.GetPartition("EFI-SYSTEM").Files = []types.File{
 		{
 			Node: types.Node{
 				Name: "test",
 				Path: "ignition",
 			},
-			Contents: []string{"asdf"},
+			Contents: "asdf",
 		},
 	}
-
-	return types.Test{name, in, out, mntDevices, config}
-}
-
-func SetHostname() types.Test {
-	name := "Setting the hostname"
-	in := types.GetBaseDisk()
-	out := types.GetBaseDisk()
-	var mntDevices []types.MntDevice
-	config := `{
-	  "ignition": { "version": "2.0.0" },
-	  "storage": {
-	    "files": [{
-	      "filesystem": "root",
-	      "path": "/etc/hostname",
-	      "mode": 420,
-	      "contents": { "source": "data:,core1" }
-	    }]
-	  }
-	}`
-	out[0].Partitions.AddFiles("ROOT", []types.File{
-		{
-			Node: types.Node{
-				Name: "hostname",
-				Path: "etc",
-			},
-			Mode:     "644",
-			Contents: []string{"core1"},
-		},
-	})
 
 	return types.Test{name, in, out, mntDevices, config}
 }
@@ -112,14 +91,14 @@ func ReplaceConfigWithRemoteConfig() types.Test {
 				Name: "bar",
 				Path: "foo",
 			},
-			Contents: []string{"example file\n"},
+			Contents: "example file\n",
 		},
 	})
 
 	return types.Test{name, in, out, mntDevices, config}
 }
 
-func Append_config_with_remote_config() types.Test {
+func AppendConfigWithRemoteConfig() types.Test {
 	name := "Appending to the Config with a Remote Config"
 	in := types.GetBaseDisk()
 	out := types.GetBaseDisk()
@@ -148,14 +127,14 @@ func Append_config_with_remote_config() types.Test {
 				Name: "bar",
 				Path: "foo",
 			},
-			Contents: []string{"example file\n"},
+			Contents: "example file\n",
 		},
 		{
 			Node: types.Node{
 				Name: "bar2",
 				Path: "foo",
 			},
-			Contents: []string{"another example file\n"},
+			Contents: "another example file\n",
 		},
 	})
 

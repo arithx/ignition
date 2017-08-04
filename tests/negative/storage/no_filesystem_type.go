@@ -15,8 +15,15 @@
 package storage
 
 import (
+	"github.com/coreos/ignition/tests/register"
 	"github.com/coreos/ignition/tests/types"
 )
+
+func init() {
+	register.Register(register.NegativeTest, NoFilesystemType())
+	register.Register(register.NegativeTest, NoFilesystemTypeWithForce())
+	register.Register(register.NegativeTest, NoFilesystemTypeWithWipeFilesystem())
+}
 
 func NoFilesystemType() types.Test {
 	name := "No Filesystem Type"

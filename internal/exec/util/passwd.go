@@ -166,7 +166,7 @@ func (u Util) AuthorizeSSHKeys(c types.PasswdUser) error {
 
 		akd, err := keys.Open(usr, true)
 		if err != nil {
-			return err
+			return fmt.Errorf("keys.Open: %v", err)
 		}
 		defer akd.Close()
 
@@ -182,11 +182,11 @@ func (u Util) AuthorizeSSHKeys(c types.PasswdUser) error {
 		}
 
 		if err := akd.Add("coreos-ignition", []byte(ks), true, true); err != nil {
-			return err
+			return fmt.Errorf("akd.Add: %v", err)
 		}
 
 		if err := akd.Sync(); err != nil {
-			return err
+			return fmt.Errorf("akd.Sync: %v", err)
 		}
 
 		return nil

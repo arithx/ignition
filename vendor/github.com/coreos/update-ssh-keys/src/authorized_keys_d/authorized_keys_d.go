@@ -107,11 +107,11 @@ func acquireLock(u *user.User) (*os.File, error) {
 	f, err := as_user.OpenFile(u, lockFilePath(u),
 		syscall.O_CREAT|syscall.O_RDONLY, 0600)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("opening %v as %v: %v", lockFilePath(u), u.Uid, err)
 	}
 	if err := syscall.Flock(int(f.Fd()), syscall.LOCK_EX); err != nil {
 		f.Close()
-		return nil, err
+		return nil, fmt.Errorf("flocking %v: %v", lockFilePath(u), err)
 	}
 	return f, nil
 }
@@ -121,27 +121,27 @@ func acquireLock(u *user.User) (*os.File, error) {
 func createAuthorizedKeysDir(u *user.User) (*SSHAuthorizedKeysDir, error) {
 	td := stageDirPath(u)
 	if err := as_user.MkdirAll(u, td, 0700); err != nil {
-		return nil, err
+		return nil, fmt.Errorf("creating %v as %v: %v", td, u, err)
 	}
 	defer os.RemoveAll(td)
 
 	akd, err := opendir(td)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("opening %v: %v", td, err)
 	}
 	akd.user = u
 
 	akfb, err := ioutil.ReadFile(authKeysFilePath(u))
 	if err != nil && !os.IsNotExist(err) {
-		return nil, err
+		return nil, fmt.Errorf("reading %v: %v", authKeysFilePath(u), err)
 	} else if err == nil {
 		err = akd.Add(PreservedKeysName, akfb, false, false)
 		if err != nil {
-			return nil, err
+			return nil, fmt.Errorf("adding preserved keys: %v", err)
 		}
 	}
 	if err = akd.rename(authKeysDirPath(u)); err != nil {
-		return nil, err
+		return nil, fmt.Errorf("renaming %v: %v", authKeysDirPath(u), err)
 	}
 	return akd, err
 }
@@ -277,7 +277,7 @@ func (akd *SSHAuthorizedKeysDir) Add(name string, keys []byte, replace, force bo
 			return fmt.Errorf("key %q disabled", name)
 		}
 	} else if !os.IsNotExist(err) {
-		return err
+		return fmt.Errorf("stat %v: %v", p, err)
 	}
 	ak := &SSHAuthorizedKey{Path: p, origin: akd}
 	return ak.Replace(keys)
@@ -303,7 +303,7 @@ func (akd *SSHAuthorizedKeysDir) Sync() error {
 	sf, err := as_user.OpenFile(akd.user, sp,
 		syscall.O_CREAT|syscall.O_TRUNC|syscall.O_WRONLY, 0600)
 	if err != nil {
-		return err
+		return fmt.Errorf("opening %v as %v: %v", sp, akd.user, err)
 	}
 	defer func() {
 		if err != nil {
@@ -316,11 +316,11 @@ func (akd *SSHAuthorizedKeysDir) Sync() error {
 		if !k.Disabled {
 			kb, err := ioutil.ReadFile(k.Path)
 			if err != nil {
-				return err
+				return fmt.Errorf("reading %v: %v", k.Path, err)
 			}
 			kb = append(kb, '\n')
 			if _, err := sf.Write(kb); err != nil {
-				return err
+				return fmt.Errorf("writing %v: %v", k.Path, err)
 			}
 		}
 		return nil
@@ -329,12 +329,12 @@ func (akd *SSHAuthorizedKeysDir) Sync() error {
 	}
 
 	if err := sf.Close(); err != nil {
-		return err
+		return fmt.Errorf("closing %v: %v", sp, err)
 	}
 
 	err = as_user.Rename(akd.user, sp, authKeysFilePath(akd.user))
 	if err != nil {
-		return err
+		return fmt.Errorf("renaming %v as %v: %v", sp, akd.user, err)
 	}
 
 	return nil
@@ -356,14 +356,17 @@ func (ak *SSHAuthorizedKey) Replace(keys []byte) error {
 	sf, err := as_user.OpenFile(ak.origin.user, sp,
 		syscall.O_WRONLY|syscall.O_CREAT|syscall.O_TRUNC, 0600)
 	if err != nil {
-		return err
+		return fmt.Errorf("couldn't open %v as %v: %v", sp, ak.origin.user, err)
 	}
 	defer os.Remove(sp)
 	if _, err = sf.Write(keys); err != nil {
-		return err
+		return fmt.Errorf("couldn't write %v as %v: %v", sp, ak.origin.user, err)
 	}
 	if err := sf.Close(); err != nil {
-		return err
+		return fmt.Errorf("couldn't close %v as %v: %v", sp, ak.origin.user, err)
 	}
-	return as_user.Rename(ak.origin.user, sp, ak.Path)
+	if err := as_user.Rename(ak.origin.user, sp, ak.Path); err != nil {
+		return fmt.Errorf("couldn't rename %v to %v as %v: %v", sp, ak.Path, ak.origin.user, err)
+	}
+	return nil
 }

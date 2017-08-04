@@ -15,8 +15,13 @@
 package files
 
 import (
+	"github.com/coreos/ignition/tests/register"
 	"github.com/coreos/ignition/tests/types"
 )
+
+func init() {
+	register.Register(register.PositiveTest, CreateFileFromRemoteContents())
+}
 
 func CreateFileFromRemoteContents() types.Test {
 	name := "Create Files from Remote Contents"
@@ -41,7 +46,7 @@ func CreateFileFromRemoteContents() types.Test {
 				Name: "bar",
 				Path: "foo",
 			},
-			Contents: []string{"asdf\nfdsa"},
+			Contents: "asdf\nfdsa",
 		},
 	})
 

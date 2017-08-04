@@ -20,8 +20,14 @@ import (
 	"net/http/httptest"
 	"time"
 
+	"github.com/coreos/ignition/tests/register"
 	"github.com/coreos/ignition/tests/types"
 )
+
+func init() {
+	register.Register(register.PositiveTest, IncreaseHTTPResponseHeadersTimeout())
+	register.Register(register.PositiveTest, ConfirmHTTPBackoffWorks())
+}
 
 var (
 	respondDelayServer = httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -73,7 +79,7 @@ func IncreaseHTTPResponseHeadersTimeout() types.Test {
 				Name: "bar",
 				Path: "foo",
 			},
-			Contents: []string{""},
+			Contents: "",
 		},
 	})
 
@@ -107,7 +113,7 @@ func ConfirmHTTPBackoffWorks() types.Test {
 				Name: "bar",
 				Path: "foo",
 			},
-			Contents: []string{""},
+			Contents: "",
 		},
 	})
 

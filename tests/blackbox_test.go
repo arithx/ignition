@@ -16,6 +16,7 @@ package blackbox
 
 import (
 	"fmt"
+	"io/ioutil"
 	"net/http"
 	"os"
 	"os/exec"
@@ -23,7 +24,11 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/coreos/ignition/tests/register"
 	"github.com/coreos/ignition/tests/types"
+
+	// Register the tests
+	_ "github.com/coreos/ignition/tests/registry"
 )
 
 func (server *HTTPServer) Config(w http.ResponseWriter, r *http.Request) {
@@ -61,9 +66,7 @@ func TestMain(m *testing.M) {
 }
 
 func TestIgnitionBlackBox(t *testing.T) {
-	tests := createTests()
-
-	for _, test := range tests {
+	for _, test := range register.Tests[register.PositiveTest] {
 		t.Run(test.Name, func(t *testing.T) {
 			outer(t, test, false)
 		})
@@ -71,9 +74,7 @@ func TestIgnitionBlackBox(t *testing.T) {
 }
 
 func TestIgnitionBlackBoxNegative(t *testing.T) {
-	tests := createNegativeTests()
-
-	for _, test := range tests {
+	for _, test := range register.Tests[register.NegativeTest] {
 		t.Run(test.Name, func(t *testing.T) {
 			outer(t, test, true)
 		})
@@ -85,7 +86,11 @@ func PreCleanup(t *testing.T) {
 		"findmnt", "-l", "-o", "target").CombinedOutput()
 	points := strings.Split(string(mountpoints), "\n")
 	for i := len(points) - 1; i >= 0; i-- {
-		match, err := filepath.Match(fmt.Sprintf("%s/*", os.Getenv("TMPDIR")))
+		tmpDir := os.Getenv("TMPDIR")
+		if tmpDir == "" {
+			tmpDir = "/tmp"
+		}
+		match, err := filepath.Match(fmt.Sprintf("%s/*", tmpDir), points[i])
 		if err != nil {
 			t.Log(err)
 		}
@@ -99,7 +104,7 @@ func outer(t *testing.T, test types.Test, negativeTests bool) {
 	PreCleanup(t)
 	t.Log(test.Name)
 
-	tmpDirectory, err := ioutil.TempDir("", test.Name)
+	tmpDirectory, err := ioutil.TempDir("", "")
 	if err != nil {
 		t.Fatalf("failed to create a temp dir: %v", err)
 	}
@@ -205,5 +210,6 @@ func outer(t *testing.T, test types.Test, negativeTests bool) {
 		removeFile(t, disk.ImageFile)
 	}
 	_ = os.Setenv("PATH", path)
+	_ = os.Setenv("TMPDIR", "")
 	removeFile(t, filepath.Join(configDir, "config.ign"))
 }

@@ -15,8 +15,14 @@
 package storage
 
 import (
+	"github.com/coreos/ignition/tests/register"
 	"github.com/coreos/ignition/tests/types"
 )
+
+func init() {
+	register.Register(register.PositiveTest, ReformatToBTRFS())
+	register.Register(register.PositiveTest, ReformatToXFS())
+}
 
 func ReformatToBTRFS() types.Test {
 	name := "Reformat a Filesystem to Btrfs"
