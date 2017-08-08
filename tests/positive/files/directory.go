@@ -21,10 +21,14 @@ import (
 
 func init() {
 	register.Register(register.PositiveTest, CreateDirectoryOnRoot())
+	register.Register(register.PositiveTest, NewDirUserGroupByID_2_1_0())
+	register.Register(register.PositiveTest, ExistingDirUserGroupByID_2_1_0())
+	register.Register(register.PositiveTest, NewDirUserGroupByName_2_1_0())
+	register.Register(register.PositiveTest, ExistingDirUserGroupByName_2_1_0())
 }
 
 func CreateDirectoryOnRoot() types.Test {
-	name := "Create a Directory on the Root Filesystem"
+	name := "Create a Directory on the Root Dirsystem"
 	in := types.GetBaseDisk()
 	out := types.GetBaseDisk()
 	var mntDevices []types.MntDevice
@@ -42,6 +46,146 @@ func CreateDirectoryOnRoot() types.Test {
 			Node: types.Node{
 				Name:      "bar",
 				Directory: "foo",
+			},
+		},
+	})
+
+	return types.Test{name, in, out, mntDevices, config}
+}
+
+func NewDirUserGroupByID_2_1_0() types.Test {
+	name := "New Directory - 2.1.0 User/Group by id"
+	in := types.GetBaseDisk()
+	out := types.GetBaseDisk()
+	var mntDevices []types.MntDevice
+	config := `{
+	  "ignition": { "version": "2.1.0" },
+	  "storage": {
+	    "directories": [{
+	      "filesystem": "root",
+	      "path": "/foo/bar",
+		  "user": {"id": 500},
+		  "group": {"id": 500}
+	    }]
+	  }
+	}`
+	out[0].Partitions.AddDirectories("ROOT", []types.Directory{
+		{
+			Node: types.Node{
+				Name:      "bar",
+				Directory: "foo",
+				User:      500,
+				Group:     500,
+			},
+		},
+	})
+
+	return types.Test{name, in, out, mntDevices, config}
+}
+
+func NewDirUserGroupByName_2_1_0() types.Test {
+	name := "New Directory - 2.1.0 User/Group by name"
+	in := types.GetBaseDisk()
+	out := types.GetBaseDisk()
+	var mntDevices []types.MntDevice
+	config := `{
+	  "ignition": { "version": "2.1.0" },
+	  "storage": {
+	    "directories": [{
+	      "filesystem": "root",
+	      "path": "/foo/bar",
+		  "user": {"name": "core"},
+		  "group": {"name": "core"}
+	    }]
+	  }
+	}`
+	out[0].Partitions.AddDirectories("ROOT", []types.Directory{
+		{
+			Node: types.Node{
+				Name:      "bar",
+				Directory: "foo",
+				User:      500,
+				Group:     500,
+			},
+		},
+	})
+
+	return types.Test{name, in, out, mntDevices, config}
+}
+
+func ExistingDirUserGroupByID_2_1_0() types.Test {
+	name := "Existing Directory - 2.1.0 User/Group by id"
+	in := types.GetBaseDisk()
+	out := types.GetBaseDisk()
+	var mntDevices []types.MntDevice
+	config := `{
+	  "ignition": { "version": "2.1.0" },
+	  "storage": {
+	    "directories": [{
+	      "filesystem": "root",
+	      "path": "/foo/bar",
+		  "user": {"id": 500},
+		  "group": {"id": 500}
+	    }]
+	  }
+	}`
+	in[0].Partitions.AddDirectories("ROOT", []types.Directory{
+		{
+			Node: types.Node{
+				Name:      "bar",
+				Directory: "foo",
+				User:      0,
+				Group:     0,
+			},
+		},
+	})
+	out[0].Partitions.AddDirectories("ROOT", []types.Directory{
+		{
+			Node: types.Node{
+				Name:      "bar",
+				Directory: "foo",
+				User:      500,
+				Group:     500,
+			},
+		},
+	})
+
+	return types.Test{name, in, out, mntDevices, config}
+}
+
+func ExistingDirUserGroupByName_2_1_0() types.Test {
+	name := "Existing Directory - 2.1.0 User/Group by name"
+	in := types.GetBaseDisk()
+	out := types.GetBaseDisk()
+	var mntDevices []types.MntDevice
+	config := `{
+	  "ignition": { "version": "2.1.0" },
+	  "storage": {
+	    "directories": [{
+	      "filesystem": "root",
+	      "path": "/foo/bar",
+		  "user": {"name": "core"},
+		  "group": {"name": "core"}
+	    }]
+	  }
+	}`
+	in[0].Partitions.AddDirectories("ROOT", []types.Directory{
+		{
+			Node: types.Node{
+				Name:      "bar",
+				Directory: "foo",
+				User:      0,
+				Group:     0,
+			},
+		},
+	})
+	out[0].Partitions.AddDirectories("ROOT", []types.Directory{
+		{
+			Node: types.Node{
+				Name:      "bar",
+				Directory: "foo",
+				User:      500,
+				Group:     500,
 			},
 		},
 	})

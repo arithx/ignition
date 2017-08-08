@@ -21,10 +21,13 @@ import (
 
 func init() {
 	register.Register(register.PositiveTest, CreateFileOnRoot())
-	register.Register(register.PositiveTest, UserGroupByID_2_0_0())
-	register.Register(register.PositiveTest, UserGroupByID_2_1_0())
+	register.Register(register.PositiveTest, NewFileUserGroupByID_2_0_0())
+	register.Register(register.PositiveTest, ExistingFileUserGroupByID_2_0_0())
+	register.Register(register.PositiveTest, NewFileUserGroupByID_2_1_0())
+	register.Register(register.PositiveTest, ExistingFileUserGroupByID_2_1_0())
 	// TODO: Investigate why ignition's C code hates our environment
-	// register.Register(register.PositiveTest, UserGroupByName_2_1_0())
+	register.Register(register.PositiveTest, NewFileUserGroupByName_2_1_0())
+	register.Register(register.PositiveTest, ExistingFileUserGroupByName_2_1_0())
 }
 
 func CreateFileOnRoot() types.Test {
@@ -55,8 +58,8 @@ func CreateFileOnRoot() types.Test {
 	return types.Test{name, in, out, mntDevices, config}
 }
 
-func UserGroupByID_2_0_0() types.Test {
-	name := "2.0.0 User/Group by id"
+func NewFileUserGroupByID_2_0_0() types.Test {
+	name := "New File - 2.0.0 User/Group by id"
 	in := types.GetBaseDisk()
 	out := types.GetBaseDisk()
 	var mntDevices []types.MntDevice
@@ -87,13 +90,13 @@ func UserGroupByID_2_0_0() types.Test {
 	return types.Test{name, in, out, mntDevices, config}
 }
 
-func UserGroupByID_2_1_0() types.Test {
-	name := "2.1.0 User/Group by id"
+func NewFileUserGroupByID_2_1_0() types.Test {
+	name := "New File - 2.1.0 User/Group by id"
 	in := types.GetBaseDisk()
 	out := types.GetBaseDisk()
 	var mntDevices []types.MntDevice
 	config := `{
-	  "ignition": { "version": "2.0.0" },
+	  "ignition": { "version": "2.1.0" },
 	  "storage": {
 	    "files": [{
 	      "filesystem": "root",
@@ -119,13 +122,13 @@ func UserGroupByID_2_1_0() types.Test {
 	return types.Test{name, in, out, mntDevices, config}
 }
 
-func UserGroupByName_2_1_0() types.Test {
-	name := "2.1.0 User/Group by name"
+func NewFileUserGroupByName_2_1_0() types.Test {
+	name := "New File - 2.1.0 User/Group by name"
 	in := types.GetBaseDisk()
 	out := types.GetBaseDisk()
 	var mntDevices []types.MntDevice
 	config := `{
-	  "ignition": { "version": "2.0.0" },
+	  "ignition": { "version": "2.1.0" },
 	  "storage": {
 	    "files": [{
 	      "filesystem": "root",
@@ -136,6 +139,132 @@ func UserGroupByName_2_1_0() types.Test {
 	    }]
 	  }
 	}`
+	out[0].Partitions.AddFiles("ROOT", []types.File{
+		{
+			Node: types.Node{
+				Name:      "bar",
+				Directory: "foo",
+				User:      500,
+				Group:     500,
+			},
+			Contents: "example file\n",
+		},
+	})
+
+	return types.Test{name, in, out, mntDevices, config}
+}
+
+func ExistingFileUserGroupByID_2_0_0() types.Test {
+	name := "Existing File - 2.0.0 User/Group by id"
+	in := types.GetBaseDisk()
+	out := types.GetBaseDisk()
+	var mntDevices []types.MntDevice
+	config := `{
+	  "ignition": { "version": "2.0.0" },
+	  "storage": {
+	    "files": [{
+	      "filesystem": "root",
+	      "path": "/foo/bar",
+		  "user": {"id": 500},
+		  "group": {"id": 500}
+	    }]
+	  }
+	}`
+	in[0].Partitions.AddFiles("ROOT", []types.File{
+		{
+			Node: types.Node{
+				Name:      "bar",
+				Directory: "foo",
+				User:      0,
+				Group:     0,
+			},
+			Contents: "example file\n",
+		},
+	})
+	out[0].Partitions.AddFiles("ROOT", []types.File{
+		{
+			Node: types.Node{
+				Name:      "bar",
+				Directory: "foo",
+				User:      500,
+				Group:     500,
+			},
+			Contents: "example file\n",
+		},
+	})
+
+	return types.Test{name, in, out, mntDevices, config}
+}
+
+func ExistingFileUserGroupByID_2_1_0() types.Test {
+	name := "Existing File - 2.1.0 User/Group by id"
+	in := types.GetBaseDisk()
+	out := types.GetBaseDisk()
+	var mntDevices []types.MntDevice
+	config := `{
+	  "ignition": { "version": "2.1.0" },
+	  "storage": {
+	    "files": [{
+	      "filesystem": "root",
+	      "path": "/foo/bar",
+		  "user": {"id": 500},
+		  "group": {"id": 500}
+	    }]
+	  }
+	}`
+	in[0].Partitions.AddFiles("ROOT", []types.File{
+		{
+			Node: types.Node{
+				Name:      "bar",
+				Directory: "foo",
+				User:      0,
+				Group:     0,
+			},
+			Contents: "example file\n",
+		},
+	})
+	out[0].Partitions.AddFiles("ROOT", []types.File{
+		{
+			Node: types.Node{
+				Name:      "bar",
+				Directory: "foo",
+				User:      500,
+				Group:     500,
+			},
+			Contents: "example file\n",
+		},
+	})
+
+	return types.Test{name, in, out, mntDevices, config}
+}
+
+func ExistingFileUserGroupByName_2_1_0() types.Test {
+	name := "Existing File - 2.1.0 User/Group by name"
+	in := types.GetBaseDisk()
+	out := types.GetBaseDisk()
+	var mntDevices []types.MntDevice
+	config := `{
+	  "ignition": { "version": "2.1.0" },
+	  "storage": {
+	    "files": [{
+	      "filesystem": "root",
+	      "path": "/foo/bar",
+		  "user": {"name": "core"},
+		  "group": {"name": "core"}
+	    }]
+	  }
+	}`
+	in[0].Partitions.AddFiles("ROOT", []types.File{
+		{
+			Node: types.Node{
+				Name:      "bar",
+				Directory: "foo",
+				User:      0,
+				Group:     0,
+			},
+			Contents: "example file\n",
+		},
+	})
 	out[0].Partitions.AddFiles("ROOT", []types.File{
 		{
 			Node: types.Node{

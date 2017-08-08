@@ -22,6 +22,10 @@ import (
 func init() {
 	register.Register(register.PositiveTest, CreateHardLinkOnRoot())
 	register.Register(register.PositiveTest, CreateSymlinkOnRoot())
+	register.Register(register.PositiveTest, NewLinkUserGroupByID_2_1_0())
+	register.Register(register.PositiveTest, ExistingLinkUserGroupByID_2_1_0())
+	register.Register(register.PositiveTest, NewLinkUserGroupByName_2_1_0())
+	register.Register(register.PositiveTest, ExistingLinkUserGroupByName_2_1_0())
 }
 
 func CreateHardLinkOnRoot() types.Test {
@@ -91,6 +95,230 @@ func CreateSymlinkOnRoot() types.Test {
 			Node: types.Node{
 				Name:      "target",
 				Directory: "foo",
+			},
+		},
+	})
+	out[0].Partitions.AddLinks("ROOT", []types.Link{
+		{
+			Node: types.Node{
+				Name:      "bar",
+				Directory: "foo",
+			},
+			Target: "/foo/target",
+			Hard:   false,
+		},
+	})
+
+	return types.Test{name, in, out, mntDevices, config}
+}
+
+func NewLinkUserGroupByID_2_1_0() types.Test {
+	name := "New Link - 2.1.0 User/Group by id"
+	in := types.GetBaseDisk()
+	out := types.GetBaseDisk()
+	var mntDevices []types.MntDevice
+	config := `{
+	  "ignition": { "version": "2.1.0" },
+	  "storage": {
+	    "links": [{
+	      "filesystem": "root",
+	      "path": "/foo/bar",
+		  "target": "/foo/target",
+		  "user": {"id": 500},
+		  "group": {"id": 500},
+		  "hard": false
+	    }]
+	  }
+	}`
+	in[0].Partitions.AddFiles("ROOT", []types.File{
+		{
+			Node: types.Node{
+				Name:      "target",
+				Directory: "foo",
+				User:      0,
+				Group:     0,
+			},
+		},
+	})
+	out[0].Partitions.AddFiles("ROOT", []types.File{
+		{
+			Node: types.Node{
+				Name:      "target",
+				Directory: "foo",
+				User:      500,
+				Group:     500,
+			},
+		},
+	})
+	out[0].Partitions.AddLinks("ROOT", []types.Link{
+		{
+			Node: types.Node{
+				Name:      "bar",
+				Directory: "foo",
+			},
+			Target: "/foo/target",
+			Hard:   false,
+		},
+	})
+
+	return types.Test{name, in, out, mntDevices, config}
+}
+
+func NewLinkUserGroupByName_2_1_0() types.Test {
+	name := "New Link - 2.1.0 User/Group by name"
+	in := types.GetBaseDisk()
+	out := types.GetBaseDisk()
+	var mntDevices []types.MntDevice
+	config := `{
+	  "ignition": { "version": "2.1.0" },
+	  "storage": {
+	    "links": [{
+	      "filesystem": "root",
+	      "path": "/foo/bar",
+		  "target": "/foo/target",
+		  "user": {"name": "core"},
+		  "group": {"name": "core"},
+		  "hard": false
+	    }]
+	  }
+	}`
+	in[0].Partitions.AddFiles("ROOT", []types.File{
+		{
+			Node: types.Node{
+				Name:      "target",
+				Directory: "foo",
+				User:      0,
+				Group:     0,
+			},
+		},
+	})
+	out[0].Partitions.AddFiles("ROOT", []types.File{
+		{
+			Node: types.Node{
+				Name:      "target",
+				Directory: "foo",
+				User:      500,
+				Group:     500,
+			},
+		},
+	})
+	out[0].Partitions.AddLinks("ROOT", []types.Link{
+		{
+			Node: types.Node{
+				Name:      "bar",
+				Directory: "foo",
+			},
+			Target: "/foo/target",
+			Hard:   false,
+		},
+	})
+
+	return types.Test{name, in, out, mntDevices, config}
+}
+
+func ExistingLinkUserGroupByID_2_1_0() types.Test {
+	name := "Existing Link - 2.1.0 User/Group by id"
+	in := types.GetBaseDisk()
+	out := types.GetBaseDisk()
+	var mntDevices []types.MntDevice
+	config := `{
+	  "ignition": { "version": "2.1.0" },
+	  "storage": {
+	    "links": [{
+	      "filesystem": "root",
+	      "path": "/foo/bar",
+		  "user": {"id": 500},
+		  "group": {"id": 500}
+	    }]
+	  }
+	}`
+	in[0].Partitions.AddFiles("ROOT", []types.File{
+		{
+			Node: types.Node{
+				Name:      "target",
+				Directory: "foo",
+				User:      0,
+				Group:     0,
+			},
+		},
+	})
+	in[0].Partitions.AddLinks("ROOT", []types.Link{
+		{
+			Node: types.Node{
+				Name:      "bar",
+				Directory: "foo",
+			},
+			Target: "/foo/target",
+			Hard:   false,
+		},
+	})
+	out[0].Partitions.AddFiles("ROOT", []types.File{
+		{
+			Node: types.Node{
+				Name:      "target",
+				Directory: "foo",
+				User:      500,
+				Group:     500,
+			},
+		},
+	})
+	out[0].Partitions.AddLinks("ROOT", []types.Link{
+		{
+			Node: types.Node{
+				Name:      "bar",
+				Directory: "foo",
+			},
+			Target: "/foo/target",
+			Hard:   false,
+		},
+	})
+
+	return types.Test{name, in, out, mntDevices, config}
+}
+
+func ExistingLinkUserGroupByName_2_1_0() types.Test {
+	name := "Existing Link - 2.1.0 User/Group by name"
+	in := types.GetBaseDisk()
+	out := types.GetBaseDisk()
+	var mntDevices []types.MntDevice
+	config := `{
+	  "ignition": { "version": "2.1.0" },
+	  "storage": {
+	    "links": [{
+	      "filesystem": "root",
+	      "path": "/foo/bar",
+		  "user": {"name": "core"},
+		  "group": {"name": "core"}
+	    }]
+	  }
+	}`
+	in[0].Partitions.AddFiles("ROOT", []types.File{
+		{
+			Node: types.Node{
+				Name:      "target",
+				Directory: "foo",
+				User:      0,
+				Group:     0,
+			},
+		},
+	})
+	in[0].Partitions.AddLinks("ROOT", []types.Link{
+		{
+			Node: types.Node{
+				Name:      "bar",
+				Directory: "foo",
+			},
+			Target: "/foo/target",
+			Hard:   false,
+		},
+	})
+	out[0].Partitions.AddFiles("ROOT", []types.File{
+		{
+			Node: types.Node{
+				Name:      "target",
+				Directory: "foo",
+				User:      500,
+				Group:     500,
 			},
 		},
 	})
