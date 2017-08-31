@@ -24,6 +24,7 @@ func init() {
 	register.Register(register.PositiveTest, WipeFilesystemWithSameType())
 	register.Register(register.PositiveTest, CreateNewPartitions())
 	register.Register(register.PositiveTest, AppendPartition())
+	register.Register(register.PositiveTest, MultiplePartitionsWith0PartitionNumber())
 }
 
 func ForceNewFilesystemOfSameType() types.Test {
@@ -260,6 +261,95 @@ func AppendPartition() types.Test {
 				Length:   65536,
 				TypeGUID: "F39C522B-9966-4429-A8F8-417CD5D83E5E",
 				GUID:     "3ED3993F-0016-422B-B134-09FCBA6F66EF",
+			},
+		},
+	})
+
+	return types.Test{name, in, out, mntDevices, config}
+}
+
+func MultiplePartitionsWith0PartitionNumber() types.Test {
+	name := "Multiple Partitions With 0 Partition Number"
+	in := types.GetBaseDisk()
+	out := types.GetBaseDisk()
+	var mntDevices []types.MntDevice
+	config := `{
+		"ignition": {
+			"version": "2.1.0"
+		},
+		"storage": {
+			"disks": [{
+				"device": "$blackbox_ignition_secondary_disk.img",
+				"wipeTable": false,
+				"partitions": [{
+					"label": "additional-partition-one",
+					"number": 0,
+					"size": 65536,
+					"guid": "EC1F6409-5D53-4B1E-9165-9031700EF8D1",
+					"typeGuid": "F39C522B-9966-4429-A8F8-417CD5D83E5E"
+				}, {
+					"label": "additional-partition-two",
+                                        "number": 0,
+                                        "size": 65536,
+					"guid": "3019C386-4409-43FE-8444-0B4A57377B95",
+                                        "typeGuid": "F39C522B-9966-4429-A8F8-417CD5D83E5E"
+				}]
+			}]
+		}
+	}`
+
+	in = append(in, types.Disk{
+		ImageFile: "blackbox_ignition_secondary_disk.img",
+		Partitions: types.Partitions{
+			{
+				Label:    "important-data",
+				Number:   1,
+				Length:   65536,
+				TypeGUID: "B921B045-1DF0-41C3-AF44-4C6F280D3FAE",
+				GUID:     "8A7A6E26-5E8F-4CCA-A654-46215D4696AC",
+			},
+			{
+				Label:    "ephemeral-data",
+				Number:   2,
+				Length:   131072,
+				TypeGUID: "CA7D7CCB-63ED-4C53-861C-1742536059CC",
+				GUID:     "B921B045-1DF0-41C3-AF44-4C6F280D3FAE",
+			},
+		},
+	})
+	out = append(out, types.Disk{
+		ImageFile: "blackbox_ignition_secondary_disk.img",
+		Partitions: types.Partitions{
+			{
+				Label:    "important-data",
+				Number:   1,
+				Length:   65536,
+				TypeGUID: "B921B045-1DF0-41C3-AF44-4C6F280D3FAE",
+				GUID:     "8A7A6E26-5E8F-4CCA-A654-46215D4696AC",
+			},
+			{
+				Label:    "ephemeral-data",
+				Number:   2,
+				Length:   131072,
+				TypeGUID: "CA7D7CCB-63ED-4C53-861C-1742536059CC",
+				GUID:     "B921B045-1DF0-41C3-AF44-4C6F280D3FAE",
+			},
+			{
+				// Please note that the ignition spec doesn't
+				// specify order, this state is the result of
+				// the way that the ignition config is written
+				Label:    "additional-partition-one",
+				Number:   3,
+				Length:   65536,
+				GUID:     "EC1F6409-5D53-4B1E-9165-9031700EF8D1",
+				TypeGUID: "F39C522B-9966-4429-A8F8-417CD5D83E5E",
+			},
+			{
+				Label:    "additional-partition-two",
+				Number:   4,
+				Length:   65536,
+				GUID:     "3019C386-4409-43FE-8444-0B4A57377B95",
+				TypeGUID: "F39C522B-9966-4429-A8F8-417CD5D83E5E",
 			},
 		},
 	})
