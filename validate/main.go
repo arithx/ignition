@@ -15,13 +15,15 @@
 package main
 
 import (
+	"encoding/json"
 	"fmt"
 	"io/ioutil"
 	"os"
 	"strings"
 
-	config "github.com/coreos/ignition/config/v2_4_experimental"
-	"github.com/coreos/ignition/internal/version"
+	//config "github.com/coreos/ignition/config/v2_4_experimental"
+	config "github.com/coreos/ignition/internal/config"
+	//"github.com/coreos/ignition/internal/version"
 
 	"github.com/spf13/cobra"
 )
@@ -54,6 +56,36 @@ func die(format string, a ...interface{}) {
 }
 
 func runIgnValidate(cmd *cobra.Command, args []string) {
+	if len(args) != 2 {
+		os.Exit(1)
+	}
+
+	c1, err := ioutil.ReadFile(args[0])
+	if err != nil {
+		stderr("reading config1: %v", err)
+	}
+	oc1, _, err := config.Parse(c1)
+	if err != nil {
+		stderr("parsing config1: %v", err)
+	}
+	c2, err := ioutil.ReadFile(args[1])
+	if err != nil {
+		stderr("reading config2: %v", err)
+	}
+	oc2, _, err := config.Parse(c2)
+	if err != nil {
+		stderr("parsing config2: %v", err)
+	}
+	c3 := config.Append(oc1, oc2)
+	s, err := json.Marshal(c3)
+	if err != nil {
+		stderr("converting config3 to json: %v", err)
+	}
+	stdout(string(s))
+}
+
+/*
+func runIgnValidate(cmd *cobra.Command, args []string) {
 	if flagVersion {
 		stdout(version.String)
 		return
@@ -83,3 +115,4 @@ func runIgnValidate(cmd *cobra.Command, args []string) {
 		die("couldn't parse config: %v", err)
 	}
 }
+*/

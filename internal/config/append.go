@@ -56,6 +56,9 @@ func appendStruct(vOld, vNew reflect.Value) reflect.Value {
 		case "Config":
 			vfRes.Set(vfNew)
 			continue
+		case "Users":
+			appendUsers(vfOld, vfNew, vfRes)
+			continue
 		}
 
 		switch vfOld.Type().Kind() {
@@ -73,4 +76,47 @@ func appendStruct(vOld, vNew reflect.Value) reflect.Value {
 	}
 
 	return vRes.Elem()
+}
+
+func appendUsers(vfOld, vfNew, vfRes reflect.Value) {
+	users := make(map[string]types.PasswdUser)
+	doAppend := func(vf reflect.Value) {
+		for i := 0; i < vf.Len(); i++ {
+			value := vf.Index(i)
+			name := value.FieldByName("Name").String()
+			if _, ok := users[name]; !ok {
+				users[name] = value.Interface().(types.PasswdUser)
+				continue
+			}
+			for j := 0; j < value.NumField(); j++ {
+				username := users[name]
+				fieldValue := reflect.ValueOf(&username).Elem().FieldByName(value.Type().Field(j).Name)
+				innerVal := value.Field(j)
+				switch fieldValue.Type().Kind() {
+				case reflect.Struct:
+					fieldValue.Set(appendStruct(fieldValue, innerVal))
+				case reflect.Slice:
+					fieldValue.Set(reflect.AppendSlice(fieldValue, innerVal))
+				default:
+					if fieldValue.Kind() == reflect.Ptr && innerVal.IsNil() {
+						fieldValue.Set(fieldValue)
+					} else if fieldValue.Kind() == reflect.String && innerVal.String() == "" {
+						fieldValue.Set(fieldValue)
+					} else {
+						fieldValue.Set(innerVal)
+					}
+				}
+				users[name] = username
+			}
+		}
+	}
+
+	doAppend(vfOld)
+	doAppend(vfNew)
+
+	userlist := make([]types.PasswdUser, 0, len(users))
+	for _, value := range users {
+		userlist = append(userlist, value)
+	}
+	vfRes.Set(reflect.ValueOf(userlist))
 }
