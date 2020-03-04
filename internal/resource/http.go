@@ -108,20 +108,33 @@ func (f *Fetcher) UpdateHttpTimeoutsAndCAs(timeouts types.Timeouts, cas []types.
 		if err != nil {
 			return err
 		}
-		block, _ := pem.Decode(cablob)
-		if block == nil {
-			f.Logger.Err("Unable to decode CA (%s)", ca.Source)
-			return ErrPEMDecodeFailed
+		var blocks []byte
+		rest := cablob
+		for {
+			var block *pem.Block
+			block, rest = pem.Decode(rest)
+			if block == nil {
+				f.Logger.Err("Unable to decode CA (%s)", ca.Source)
+				return ErrPEMDecodeFailed
+			}
+
+			blocks = append(blocks, block.Bytes...)
+
+			if len(rest) == 0 {
+				break
+			}
 		}
 
-		cert, err := x509.ParseCertificate(block.Bytes)
+		certs, err := x509.ParseCertificates(blocks)
 		if err != nil {
 			f.Logger.Err("Unable to parse CA (%s): %s", ca.Source, err)
 			return err
 		}
 
-		f.Logger.Info("Adding %q to list of CAs", cert.Subject.CommonName)
-		pool.AddCert(cert)
+		for _, cert := range certs {
+			f.Logger.Info("Adding %q to list of CAs", cert.Subject.CommonName)
+			pool.AddCert(cert)
+		}
 	}
 
 	f.client.transport.TLSClientConfig = &tls.Config{RootCAs: pool}
