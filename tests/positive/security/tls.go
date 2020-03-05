@@ -37,6 +37,7 @@ func init() {
 
 	register.Register(register.PositiveTest, AppendConfigCustomCert())
 	register.Register(register.PositiveTest, FetchFileCustomCert())
+	register.Register(register.PositiveTest, FetchFileCustomCertBundle())
 	register.Register(register.PositiveTest, FetchFileCustomCertHTTP())
 	register.Register(register.PositiveTest, FetchFileCustomCertHTTPUsingHeaders())
 	register.Register(register.PositiveTest, FetchFileCustomCertHTTPRedirectHeaders())
@@ -58,6 +59,44 @@ veCNsqvm82F1NVevVoExAUhDYmMREa4=
 	// generated via:
 	// openssl req -new -x509 -sha256 -key server.key -out server.crt -days 3650
 	publicKey = []byte(`-----BEGIN CERTIFICATE-----
+MIICzTCCAlKgAwIBAgIJALTP0pfNBMzGMAoGCCqGSM49BAMCMIGZMQswCQYDVQQG
+EwJVUzETMBEGA1UECAwKQ2FsaWZvcm5pYTEWMBQGA1UEBwwNU2FuIEZyYW5jaXNj
+bzETMBEGA1UECgwKQ29yZU9TIEluYzEUMBIGA1UECwwLRW5naW5lZXJpbmcxEzAR
+BgNVBAMMCmNvcmVvcy5jb20xHTAbBgkqhkiG9w0BCQEWDm9lbUBjb3Jlb3MuY29t
+MB4XDTE4MDEyNTAwMDczOVoXDTI4MDEyMzAwMDczOVowgZkxCzAJBgNVBAYTAlVT
+MRMwEQYDVQQIDApDYWxpZm9ybmlhMRYwFAYDVQQHDA1TYW4gRnJhbmNpc2NvMRMw
+EQYDVQQKDApDb3JlT1MgSW5jMRQwEgYDVQQLDAtFbmdpbmVlcmluZzETMBEGA1UE
+AwwKY29yZW9zLmNvbTEdMBsGCSqGSIb3DQEJARYOb2VtQGNvcmVvcy5jb20wdjAQ
+BgcqhkjOPQIBBgUrgQQAIgNiAAQDEhfHEulYKlANw9eR5l455gwzAIQuraa049Rh
+vM7PPywaiD8DobteQmE8wn7cJSzOYw6GLvrL4Q1BO5EFUXknkW50t8lfnUeHveCN
+sqvm82F1NVevVoExAUhDYmMREa6jZDBiMA8GA1UdEQQIMAaHBH8AAAEwHQYDVR0O
+BBYEFEbFy0SPiF1YXt+9T3Jig2rNmBtpMB8GA1UdIwQYMBaAFEbFy0SPiF1YXt+9
+T3Jig2rNmBtpMA8GA1UdEwEB/wQFMAMBAf8wCgYIKoZIzj0EAwIDaQAwZgIxAOul
+t3MhI02IONjTDusl2YuCxMgpy2uy0MPkEGUHnUOsxmPSG0gEBCNHyeKVeTaPUwIx
+AKbyaAqbChEy9CvDgyv6qxTYU+eeBImLKS3PH2uW5etc/69V/sDojqpH3hEffsOt
+9g==
+-----END CERTIFICATE-----`)
+
+	// generated via:
+	// openssl genrsa -out key_A.key 1024
+	// openssl req -new -key key_A.key -out csr_A.csr
+	// openssl x509 -req -days 3650 -in csr_A.csr -CA server.crt -CAkey server.key -set_serial 01 -out crt_A.crt
+	// cat crt_A.key server.crt > bundle.crt
+	publicKeyBundle = []byte(`-----BEGIN CERTIFICATE-----
+MIICKjCCAbECAQEwCgYIKoZIzj0EAwIwgZkxCzAJBgNVBAYTAlVTMRMwEQYDVQQI
+DApDYWxpZm9ybmlhMRYwFAYDVQQHDA1TYW4gRnJhbmNpc2NvMRMwEQYDVQQKDApD
+b3JlT1MgSW5jMRQwEgYDVQQLDAtFbmdpbmVlcmluZzETMBEGA1UEAwwKY29yZW9z
+LmNvbTEdMBsGCSqGSIb3DQEJARYOb2VtQGNvcmVvcy5jb20wHhcNMjAwMzA1MDg0
+NDE2WhcNMzAwMzAzMDg0NDE2WjBCMQswCQYDVQQGEwJYWDEVMBMGA1UEBwwMRGVm
+YXVsdCBDaXR5MRwwGgYDVQQKDBNEZWZhdWx0IENvbXBhbnkgTHRkMIGfMA0GCSqG
+SIb3DQEBAQUAA4GNADCBiQKBgQC6zMwoJIvRWj3fKhqpUCXiFrgicUaY5cfyAAFg
+D8IxlNlrK3gYAoEMEs2S/9/bbaqUR9cAD2oQFsG9dKUHYCYtSnAcD0POeWMrwo/V
+EzWJ4CMvoFHAZwPzWL6t75z06Qf8IDBHA5TdM/+7paNPgUAw2gTKpOFj7tViuilI
+2gmUOQIDAQABMAoGCCqGSM49BAMCA2cAMGQCMFvPppGV8FAKzOQ5Kjftg3eJJDQL
+bLmbw42gra9g4/jxivDpth0d1I9CFxJVXfD7oQIwfFXdKmny57unmEiile1nIaPa
++8/tM+qx2ns6zUf5rwAs5svdMH1kFIYkW7f9/Oz9
+-----END CERTIFICATE-----
+-----BEGIN CERTIFICATE-----
 MIICzTCCAlKgAwIBAgIJALTP0pfNBMzGMAoGCCqGSM49BAMCMIGZMQswCQYDVQQG
 EwJVUzETMBEGA1UECAwKQ2FsaWZvcm5pYTEWMBQGA1UEBwwNU2FuIEZyYW5jaXNj
 bzETMBEGA1UECgwKQ29yZU9TIEluYzEUMBIGA1UECwwLRW5naW5lZXJpbmcxEzAR
@@ -159,6 +198,52 @@ func FetchFileCustomCert() types.Test {
 			}]
 		}
 	}`, dataurl.EncodeBytes(publicKey), customCAServer.URL)
+	configMinVersion := "2.2.0"
+
+	out[0].Partitions.AddFiles("ROOT", []types.File{
+		{
+			Node: types.Node{
+				Directory: "foo",
+				Name:      "bar",
+			},
+			Contents: string(customCAServerFile),
+		},
+	})
+
+	return types.Test{
+		Name:             name,
+		In:               in,
+		Out:              out,
+		Config:           config,
+		ConfigMinVersion: configMinVersion,
+	}
+}
+
+func FetchFileCustomCertBundle() types.Test {
+	name := "Fetch file with custom tls cert bundle"
+	in := types.GetBaseDisk()
+	out := types.GetBaseDisk()
+	config := fmt.Sprintf(`{
+		"ignition": {
+			"version": "$version",
+			"security": {
+				"tls": {
+					"certificateAuthorities": [{
+						"source": %q
+					}]
+				}
+			}
+		},
+		"storage": {
+			"files": [{
+				"filesystem": "root",
+				"path": "/foo/bar",
+				"contents": {
+					"source": %q
+				}
+			}]
+		}
+	}`, dataurl.EncodeBytes(publicKeyBundle), customCAServer.URL)
 	configMinVersion := "2.2.0"
 
 	out[0].Partitions.AddFiles("ROOT", []types.File{
