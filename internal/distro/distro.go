@@ -56,6 +56,11 @@ var (
 	chccwdevCmd  = "chccwdev"
 	cioIgnoreCmd = "cio_ignore"
 
+	// LUKS programs
+	clevisCmd     = "clevis"
+	cryptsetupCmd = "cryptsetup"
+	ddCmd         = "dd"
+
 	// Flags
 	selinuxRelabel  = "true"
 	blackboxTesting = "false"
@@ -93,6 +98,10 @@ func XfsMkfsCmd() string   { return xfsMkfsCmd }
 func VmurCmd() string      { return vmurCmd }
 func ChccwdevCmd() string  { return chccwdevCmd }
 func CioIgnoreCmd() string { return cioIgnoreCmd }
+
+func ClevisCmd() string     { return clevisCmd }
+func CryptsetupCmd() string { return cryptsetupCmd }
+func DdCmd() string         { return ddCmd }
 
 func SelinuxRelabel() bool  { return bakedStringToBool(selinuxRelabel) && !BlackboxTesting() }
 func BlackboxTesting() bool { return bakedStringToBool(blackboxTesting) }

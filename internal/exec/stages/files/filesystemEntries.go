@@ -16,15 +16,93 @@ package files
 
 import (
 	"fmt"
+	"io/ioutil"
 	"os"
+	"os/exec"
 	"path/filepath"
+	"regexp"
 	"sort"
 	"strings"
 
 	"github.com/coreos/ignition/v2/config/v3_2_experimental/types"
+	"github.com/coreos/ignition/v2/internal/distro"
 	"github.com/coreos/ignition/v2/internal/exec/util"
 	"github.com/coreos/ignition/v2/internal/log"
+
+	"github.com/vincent-petithory/dataurl"
 )
+
+// createCrypttabEntries creates entries inside of /etc/crypttab for LUKS volumes.
+// additionally creates unlock units for clevis based devices.
+func (s *stage) createCrypttabEntries(config types.Config) error {
+	if len(config.Storage.Luks) == 0 {
+		return nil
+	}
+
+	s.Logger.PushPrefix("createCrypttabEntries")
+	defer s.Logger.PopPrefix()
+
+	crypttab := fileEntry{
+		types.Node{
+			Path: "/sysroot/etc/crypttab",
+		},
+		types.FileEmbedded1{},
+	}
+	keyfiles := []fileEntry{}
+	for _, luks := range config.Storage.Luks {
+		dump, err := exec.Command(distro.CryptsetupCmd(), "luksDump", luks.Device).CombinedOutput()
+		if err != nil {
+			return fmt.Errorf("gathering luks header: %v", err)
+		}
+		pattern := regexp.MustCompile(`UUID:\s+(?P<UUID>[a-f0-9\-]+)`)
+		match := pattern.FindSubmatch(dump)
+		if len(match) < 2 {
+			return fmt.Errorf("couldn't gather luks device %v uuid", luks.Name)
+		}
+		uuid := string(match[1])
+		netdev := ""
+		if len(luks.Clevis.Tang) > 0 {
+			netdev = ",_netdev"
+		}
+		keyfile := "none"
+		if luks.Clevis == nil {
+			keyfile = filepath.Join(util.LuksRealRootKeyFilePath, luks.Name)
+
+			// Copy keyfile from initramfs to real root
+			contents, err := ioutil.ReadFile(filepath.Join(util.LuksInitramfsKeyFilePath, luks.Name))
+			if err != nil {
+				return fmt.Errorf("reading keyfile for %s: %v", luks.Name, err)
+			}
+			contentsUri := dataurl.EncodeBytes(contents)
+			keyfiles = append(keyfiles, fileEntry{
+				types.Node{
+					Path: keyfile,
+				},
+				types.FileEmbedded1{
+					Contents: types.Resource{
+						Source: &contentsUri,
+					},
+				},
+			})
+		}
+		uri := dataurl.EncodeBytes([]byte(fmt.Sprintf("%s UUID=%s %s luks%s\n", luks.Name, uuid, keyfile, netdev)))
+		crypttab.Append = append(crypttab.Append, types.Resource{
+			Source: &uri,
+		})
+	}
+	if err := crypttab.create(s.Logger, s.Util); err != nil {
+		return fmt.Errorf("adding luks devices to crypttab: %v", err)
+	}
+	for _, file := range keyfiles {
+		if err := file.create(s.Logger, s.Util); err != nil {
+			return fmt.Errorf("copying keyfile: %v", err)
+		}
+	}
+	if err := os.RemoveAll(util.LuksInitramfsKeyFilePath); err != nil {
+		return fmt.Errorf("removing initramfs keyfiles: %v", err)
+	}
+	return nil
+}
 
 // createFilesystemsEntries creates the files described in config.Storage.{Files,Directories}.
 func (s *stage) createFilesystemsEntries(config types.Config) error {
@@ -225,7 +303,6 @@ func (s stage) getOrderedCreationList(config types.Config) ([]filesystemEntry, e
 		entries = append(entries, fileEntry(f))
 	}
 
-	hardlinks := []filesystemEntry{}
 	for _, l := range config.Storage.Links {
 		path, err := s.JoinPath(l.Path)
 		if err != nil {
@@ -237,19 +314,9 @@ func (s stage) getOrderedCreationList(config types.Config) ([]filesystemEntry, e
 		}
 		paths[path] = l.Path
 		l.Path = path
-		if l.Hard != nil && *l.Hard {
-			hardlinks = append(hardlinks, linkEntry(l))
-		} else {
-			entries = append(entries, linkEntry(l))
-		}
-
+		entries = append(entries, linkEntry(l))
 	}
 	sort.Slice(entries, func(i, j int) bool { return util.Depth(entries[i].node().Path) < util.Depth(entries[j].node().Path) })
-
-	// Append all the hard links to the list after sorting. This allows
-	// Ignition to create hard links to files that are deeper than the hard
-	// link. For reference: https://github.com/coreos/ignition/issues/800
-	entries = append(entries, hardlinks...)
 
 	return entries, nil
 }
