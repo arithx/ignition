@@ -76,16 +76,16 @@ func (s stage) Run(config types.Config) error {
 		return nil
 	}
 
-	if err := s.createLuks(config); err != nil {
-		return fmt.Errorf("failed to create luks: %v", err)
-	}
-
 	if err := s.createPartitions(config); err != nil {
 		return fmt.Errorf("create partitions failed: %v", err)
 	}
 
 	if err := s.createRaids(config); err != nil {
 		return fmt.Errorf("failed to create raids: %v", err)
+	}
+
+	if err := s.createLuks(config); err != nil {
+		return fmt.Errorf("failed to create luks: %v", err)
 	}
 
 	if err := s.createFilesystems(config); err != nil {
