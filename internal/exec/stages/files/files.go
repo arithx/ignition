@@ -17,6 +17,7 @@ package files
 import (
 	"errors"
 	"fmt"
+	"os/exec"
 	"path/filepath"
 
 	"github.com/coreos/ignition/v2/config/v3_3_experimental/types"
@@ -85,6 +86,10 @@ func (s stage) Run(config types.Config) error {
 		return fmt.Errorf("creating crypttab entries: %v", err)
 	}
 
+	if err := s.addKargs(config); err != nil {
+		return fmt.Errorf("failed adding kernel arguments: %v", err)
+	}
+
 	if err := s.relabelFiles(); err != nil {
 		return fmt.Errorf("failed to handle relabeling: %v", err)
 	}
@@ -134,4 +139,15 @@ func (s *stage) relabelFiles() error {
 	// labeling for files created by processes we call out to, like `useradd`.
 
 	return s.RelabelFiles(s.toRelabel)
+}
+
+func (s *stage) addKargs(config types.Config) error {
+	var kargs []string
+	for _, arg := range config.KernelArguments {
+		kargs = append(kargs, string(arg))
+	}
+	_, err := s.Logger.LogCmd(
+		exec.Command(distro.KargsCmd(), kargs...),
+		"updating kernel arguments")
+	return err
 }
