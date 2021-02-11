@@ -179,6 +179,7 @@ The Ignition configuration is a JSON document conforming to the following specif
     * **_passwordHash_** (string): the encrypted password of the new group.
     * **_shouldExist_** (boolean) whether or not the group with the specified `name` should exist. If omitted, it defaults to true. If false, then Ignition will delete the specified group.
     * **_system_** (bool): whether or not the group should be a system group. This only has an effect if the group doesn't exist yet.
+* **_kernelArguments_** (list of strings): the list of kernel arguments to be set.
 
 [part-types]: http://en.wikipedia.org/wiki/GUID_Partition_Table#Partition_type_GUIDs
 [rfc2397]: https://tools.ietf.org/html/rfc2397

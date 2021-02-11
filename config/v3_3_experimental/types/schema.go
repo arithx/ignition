@@ -10,10 +10,11 @@ type Clevis struct {
 }
 
 type Config struct {
-	Ignition Ignition `json:"ignition"`
-	Passwd   Passwd   `json:"passwd,omitempty"`
-	Storage  Storage  `json:"storage,omitempty"`
-	Systemd  Systemd  `json:"systemd,omitempty"`
+	Ignition        Ignition        `json:"ignition"`
+	KernelArguments KernelArguments `json:"kernelArguments,omitempty"`
+	Passwd          Passwd          `json:"passwd,omitempty"`
+	Storage         Storage         `json:"storage,omitempty"`
+	Systemd         Systemd         `json:"systemd,omitempty"`
 }
 
 type Custom struct {
@@ -89,6 +90,10 @@ type IgnitionConfig struct {
 	Merge   []Resource `json:"merge,omitempty"`
 	Replace Resource   `json:"replace,omitempty"`
 }
+
+type KernelArgument string
+
+type KernelArguments []KernelArgument
 
 type Link struct {
 	Node
